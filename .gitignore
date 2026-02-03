@@ -1,0 +1,20 @@
+# Basic gitignore
+# macOS
+.DS_Store
+
+# TypeScript
+node_modules/
+.tsbuildinfo
+
+# Python
+__pycache__/
+.pytest_cache/
+env/
+Pipfile.lock
+
+# Secrets
+.env
+.env.local
+.env.test
+.env.dev
+.secrets
