@@ -6,6 +6,10 @@
   "permissions": [
     "storage"
   ],
+  "host_permissions": [
+    "*://canvas.vt.edu/*",
+    "*://*.instructure.com/*"
+  ],
   "content_scripts": [
     {
       "matches": [
