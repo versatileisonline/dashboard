@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Versatile",
+  "version": "1.0",
+  "description": "Unified task management and productivity dashboard for Canvas.",
+  "permissions": [
+    "storage"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://canvas.vt.edu/*", 
+        "*://*.instructure.com/*"
+      ],
+      "css": ["styles.css"],
+      "js": ["content.js"]
+    }
+  ]
+}

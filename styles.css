@@ -1,0 +1,74 @@
+/* Core Sidebar Layout */
+#canvas-plus-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 350px;
+  height: 100vh;
+  background-color: #f5f5f5; 
+  border-left: 2px solid #c7cdd1;
+  z-index: 9999;
+  padding: 15px;
+  box-sizing: border-box;
+  box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+  font-family: inherit; 
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Headers and Typography */
+#canvas-plus-sidebar h2 {
+  margin-top: 0;
+  border-bottom: 2px solid #e0e6e9;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+  color: #2d3b45;
+}
+
+.section-title {
+  font-size: 0.95rem;
+  font-weight: bold;
+  margin-bottom: 6px;
+  color: #2d3b45;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cp-section {
+  margin-bottom: 20px;
+}
+
+/* Task Cards (To-Do) */
+.cp-task-card {
+  background-color: #ffffff;
+  border: 1px solid #c7cdd1;
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* Topic Cards (Topics) */
+.cp-topic-card {
+  background-color: #ffffff;
+  border: 1px solid #c7cdd1;
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.cp-title {
+  font-weight: bold;
+  font-size: 0.85rem;
+  margin: 0 0 3px 0;
+  color: #2d3b45;
+}
+
+.cp-task-date {
+  font-size: 0.75rem;
+  color: #556572;
+  margin: 0;
+}
