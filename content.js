@@ -8,15 +8,15 @@ sidebar.innerHTML = `
   
   <div class="cp-section">
     <div class="section-title">To-Do</div>
-    <div class="cp-task-card">
+    <div class="cp-task-card priority-xtrm">
       <p class="cp-title">CS 3214: Final Project</p>
       <p class="cp-task-date">Due: Tomorrow at 11:59 PM</p>
     </div>
-    <div class="cp-task-card">
+    <div class="cp-task-card priority-med">
       <p class="cp-title">CS 3304: Study Guide Review</p>
       <p class="cp-task-date">Due: Friday at 5:00 PM</p>
     </div>
-    <div class="cp-task-card">
+    <div class="cp-task-card priority-low">
       <p class="cp-title">CS 3114: Practice Exam</p>
       <p class="cp-task-date">Due: Monday at 9:00 AM</p>
     </div>
