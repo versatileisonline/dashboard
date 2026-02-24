@@ -328,7 +328,7 @@ body:not(.versatile-hidden) #right-side {
 /* Floating action button (shown when sidebar is hidden) */
 #versatile-fab {
     position: fixed;
-    top: 5px;
+    bottom: 24px;
     right: 24px;
     width: 44px;
     height: 44px;
