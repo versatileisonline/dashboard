@@ -105,6 +105,19 @@ function sanitize(str) {
   return div.innerHTML;
 }
 
+function normalizeExternalUrl(rawUrl) {
+  if (!rawUrl) return '';
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+
+  try {
+    return new URL(withProtocol).toString();
+  } catch {
+    return null;
+  }
+}
+
 function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks) {
   const priority = taskPriorities[task.id] || null;
   const card = document.createElement('div');
@@ -116,15 +129,24 @@ function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks) {
 
   const safeTitle = sanitize(task.title);
   const safeCoursePrefix = task.courseName ? `${sanitize(task.courseName)} — ` : '';
+  const hasExternalLink = task.source === 'shadow' && !!task.externalLink;
+  const externalLinkHtml = hasExternalLink
+    ? `<p class="cp-task-link"><a href="${sanitize(task.externalLink)}" target="_blank" rel="noopener noreferrer">Open external link</a></p>`
+    : '';
+  const taskActionHtml = task.source === 'shadow'
+    ? `<div class="vtask-actions-row"><button class="vtask-delete-btn" data-id="${task.id}" title="Delete custom task">Delete</button></div>`
+    : '';
 
   card.innerHTML = `
     <p class="cp-title">${safeTitle}  ${badge}</p>
     <p class="cp-task-date">${safeCoursePrefix}${formatDueDate(task.dueAt)}</p>
+    ${externalLinkHtml}
     <div class="vtask-priority-row">
       <button class="vtask-dot vtask-dot-low  ${priority === 'low' ? 'vtask-dot-active' : ''}" data-priority="low"  data-id="${task.id}"></button>
       <button class="vtask-dot vtask-dot-med  ${priority === 'med' ? 'vtask-dot-active' : ''}" data-priority="med"  data-id="${task.id}"></button>
       <button class="vtask-dot vtask-dot-xtrm ${priority === 'xtrm' ? 'vtask-dot-active' : ''}" data-priority="xtrm" data-id="${task.id}"></button>
     </div>
+    ${taskActionHtml}
   `;
 
   card.querySelectorAll('.vtask-dot').forEach(btn => {
@@ -141,6 +163,17 @@ function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks) {
 
       await saveStorage(shadowTasks, updated);
       renderTodoSection(canvasTasks, shadowTasks, updated);
+    });
+  });
+
+  card.querySelectorAll('.vtask-delete-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const taskId = btn.dataset.id;
+      const updatedShadow = shadowTasks.filter(taskItem => taskItem.id !== taskId);
+      const updatedPriorities = { ...taskPriorities };
+      delete updatedPriorities[taskId];
+      await saveStorage(updatedShadow, updatedPriorities);
+      renderTodoSection(canvasTasks, updatedShadow, updatedPriorities);
     });
   });
 
@@ -186,27 +219,34 @@ function renderTodoSection(canvasTasks, shadowTasks, taskPriorities) {
 
 async function handleAddTask(canvasTasks) {
   const titleEl = document.getElementById('vtask-title');
+  const courseEl = document.getElementById('vtask-course');
+  const linkEl = document.getElementById('vtask-link');
   const dueEl = document.getElementById('vtask-due');
   const descEl = document.getElementById('vtask-desc');
 
   const title = titleEl.value.trim();
+  const courseName = courseEl.value.trim();
+  const normalizedLink = normalizeExternalUrl(linkEl.value);
   const due = dueEl.value;
 
   titleEl.style.borderColor = '';
+  linkEl.style.borderColor = '';
   dueEl.style.borderColor = '';
 
   let valid = true;
   if (!title) { titleEl.style.borderColor = '#ff0000'; valid = false; }
   if (!due) { dueEl.style.borderColor = '#ff0000'; valid = false; }
+  if (normalizedLink === null) { linkEl.style.borderColor = '#ff0000'; valid = false; }
   if (!valid) return;
 
   const newTask = {
     id: Date.now().toString(),
     title,
-    courseName: '',
+    courseName,
     dueAt: new Date(due).toISOString(),
     source: 'shadow',
-    description: descEl.value.trim()
+    description: descEl.value.trim(),
+    externalLink: normalizedLink
   };
 
   const { shadowTasks, taskPriorities } = await loadStorage();
@@ -219,9 +259,12 @@ async function handleAddTask(canvasTasks) {
 
 function resetAddTaskForm() {
   document.getElementById('vtask-title').value = '';
+  document.getElementById('vtask-course').value = '';
+  document.getElementById('vtask-link').value = '';
   document.getElementById('vtask-desc').value = '';
   document.getElementById('vtask-due').value = '';
   document.getElementById('vtask-title').style.borderColor = '';
+  document.getElementById('vtask-link').style.borderColor = '';
   document.getElementById('vtask-due').style.borderColor = '';
   document.getElementById('versatile-add-task-form').style.display = 'none';
   document.getElementById('versatile-add-task-btn').style.display = 'block';
@@ -264,6 +307,8 @@ function initSidebar() {
       <button id="versatile-add-task-btn">+ Add Task</button>
       <div id="versatile-add-task-form" style="display:none;">
         <input type="text" id="vtask-title" placeholder="Title" />
+        <input type="text" id="vtask-course" placeholder="Course (optional)" />
+        <input type="text" id="vtask-link" placeholder="External URL (optional)" />
         <textarea id="vtask-desc" placeholder="Description (optional)"></textarea>
         <input type="datetime-local" id="vtask-due" />
         <div class="vtask-form-actions">
@@ -356,11 +401,12 @@ async function initVersatile() {
     }
     updateSortBtn();
 
-    sortBtn.addEventListener('click', () => {
+    sortBtn.addEventListener('click', async () => {
       sortMode = sortMode === 'date' ? 'priority' : 'date';
       chrome.storage.local.set({ sortMode });
       updateSortBtn();
-      renderTodoSection(canvasTasks, shadowTasks, taskPriorities);
+      const latestStorage = await loadStorage();
+      renderTodoSection(canvasTasks, latestStorage.shadowTasks, latestStorage.taskPriorities);
     });
 
     document.getElementById('vtask-submit').addEventListener('click', () => {

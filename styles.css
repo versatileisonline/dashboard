@@ -90,11 +90,46 @@ body:not(.versatile-hidden) #right-side {
     margin: 0;
 }
 
+.cp-task-link {
+    font-size: 0.74rem;
+    margin: 4px 0 0 0;
+}
+
+.cp-task-link a {
+    color: #0770a3;
+    text-decoration: none;
+}
+
+.cp-task-link a:hover {
+    text-decoration: underline;
+}
+
 /* Priority dot picker */
 .vtask-priority-row {
     display: flex;
     gap: 6px;
     margin-top: 6px;
+}
+
+.vtask-actions-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 6px;
+}
+
+.vtask-delete-btn {
+    background: none;
+    border: 1px solid #c7cdd1;
+    border-radius: 3px;
+    color: #556572;
+    font-size: 0.72rem;
+    cursor: pointer;
+    padding: 2px 8px;
+}
+
+.vtask-delete-btn:hover {
+    background: #f7f7f7;
+    border-color: #9ca8b2;
 }
 
 .vtask-dot {
