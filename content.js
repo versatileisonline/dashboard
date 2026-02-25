@@ -121,6 +121,29 @@ async function fetchCanvasCourses() {
   }
 }
 
+async function fetchCanvasNotifications() {
+  const url = `/api/v1/users/self/activity_stream`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (!response.ok) {
+      console.error(`[Versatile] Canvas API error (notifications): ${response.status} ${response.statusText}`);
+      return [];
+    }
+
+    return await response.json();
+
+  } catch (err) {
+    console.error('[Versatile] fetchCanvasNotifications failed:', err);
+    return [];
+  }
+}
+
 // 5. Render ------
 
 function sanitize(str) {
@@ -257,6 +280,38 @@ function renderTopicsSection(courses) {
   });
 }
 
+function renderNotificationsSection(notifications) {
+  const container = document.getElementById('versatile-notifications-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (!notifications || notifications.length === 0) {
+    container.innerHTML = '<p class="cp-task-date" style="padding:4px 0;">No recent notifications.</p>';
+    return;
+  }
+
+  // Limit to the 10 most recent notifications
+  const recentNotifs = notifications.slice(0, 10);
+
+  recentNotifs.forEach(notif => {
+    const card = document.createElement('div');
+    card.className = 'cp-topic-card';
+
+    const rawTitle = notif.title || notif.message || `New ${notif.type}`;
+    
+    const cleanText = rawTitle.replace(/<[^>]*>?/gm, '');
+    const textTitle = sanitize(cleanText).substring(0, 80) + (cleanText.length > 80 ? '...' : '');
+
+    card.innerHTML = `<p class="cp-title">${textTitle}</p>`;
+    
+    if (notif.html_url) {
+      card.innerHTML += `<p class="cp-task-link"><a href="${sanitize(notif.html_url)}" target="_blank">View details</a></p>`;
+    }
+
+    container.appendChild(card);
+  });
+}
+
 // 6. Handlers -------
 
 async function handleAddTask(canvasTasks) {
@@ -368,8 +423,8 @@ function initSidebar() {
 
     <div class="cp-section">
       <div class="section-title">Notifications</div>
-      <div class="cp-topic-card"><p class="cp-title">Office hours moved to Zoom today.</p></div>
-      <div class="cp-topic-card"><p class="cp-title">Exam grades have been posted.</p></div>
+      <div id="versatile-notifications-list">
+        </div>
     </div>
   `;
 
@@ -403,10 +458,11 @@ async function initVersatile() {
     initSidebar();
     console.debug('[Versatile] Sidebar skeleton built.');
 
-    const [storageData, rawItems, courses] = await Promise.all([
+    const [storageData, rawItems, courses, notifications] = await Promise.all([
       loadStorage(),
       fetchCanvasTasks(),
-      fetchCanvasCourses()
+      fetchCanvasCourses(),
+      fetchCanvasNotifications()
     ]);
 
     console.debug('[Versatile] Storage loaded:', {
@@ -432,6 +488,8 @@ async function initVersatile() {
     }
 
     renderTopicsSection(courses);
+
+    renderNotificationsSection(notifications);
 
     sortMode = savedSortMode;
 
