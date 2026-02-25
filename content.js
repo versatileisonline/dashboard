@@ -682,7 +682,7 @@ function resetAddTaskForm() {
   document.getElementById('versatile-add-task-btn').style.display = 'block';
 }
 
-// 7. Sidebar Skeleton -------
+// 8. Sidebar Skeleton -------
 
 function collapseSidebar() {
   document.getElementById('Versatile').style.display = 'none';
@@ -700,76 +700,6 @@ function expandSidebar() {
   chrome.storage.local.set({ sidebarCollapsed: false });
 }
 
-// 7b. Course Detail Navigation ----------
-
-let activeCourseId = null;
-
-function closeCourseDetail() {
-  activeCourseId = null;
-  document.getElementById('versatile-course-detail').style.display = 'none';
-  document.getElementById('versatile-main-view').style.display = 'block';
-  document.getElementById('Versatile').scrollTop = 0;
-}
-
-function openCourseDetail(course, context) {
-  activeCourseId = course.id;
-  document.getElementById('versatile-main-view').style.display = 'none';
-  const detailEl = document.getElementById('versatile-course-detail');
-  detailEl.style.display = 'block';
-  detailEl.innerHTML = '';
-
-  const header = document.createElement('div');
-  header.className = 'cp-detail-header';
-  header.innerHTML = `
-    <button class="cp-back-btn" title="Back to main view">&#8592;</button>
-    <span class="cp-detail-course-name">${sanitize(course.name)}</span>
-  `;
-  header.querySelector('.cp-back-btn').addEventListener('click', closeCourseDetail);
-  detailEl.appendChild(header);
-
-  renderDetailTasks(course, context, detailEl);
-  renderDetailNotes(course, context, detailEl);
-  renderDetailNotifications(course, context, detailEl);
-  renderDetailLinks(course, context, detailEl);
-
-  document.getElementById('Versatile').scrollTop = 0;
-}
-
-function initUrlWatcher(context) {
-  function handleUrlChange() {
-    const courseId = getCourseIdFromUrl(location.pathname);
-
-    if (courseId) {
-      const course = context.courses.find(c => c.id === courseId);
-      if (course && activeCourseId !== courseId) {
-        openCourseDetail(course, context);
-      }
-    } else {
-      if (activeCourseId !== null) {
-        closeCourseDetail();
-      }
-    }
-  }
-
-  const originalPushState = history.pushState.bind(history);
-  const originalReplaceState = history.replaceState.bind(history);
-
-  history.pushState = function (...args) {
-    originalPushState(...args);
-    handleUrlChange();
-  };
-  history.replaceState = function (...args) {
-    originalReplaceState(...args);
-    handleUrlChange();
-  };
-
-  window.addEventListener('popstate', handleUrlChange);
-
-  // Check URL on initial load
-  handleUrlChange();
-}
-
-// 8. Sidebar Skeleton ----------
 
 function initSidebar() {
   const sidebar = document.createElement('div');
@@ -839,7 +769,76 @@ function initSidebar() {
   });
 }
 
-// 8. Bootstrap -------------
+// 8b. Course Detail Navigation ----------
+
+let activeCourseId = null;
+
+function closeCourseDetail() {
+  activeCourseId = null;
+  document.getElementById('versatile-course-detail').style.display = 'none';
+  document.getElementById('versatile-main-view').style.display = 'block';
+  document.getElementById('Versatile').scrollTop = 0;
+}
+
+function openCourseDetail(course, context) {
+  activeCourseId = course.id;
+  document.getElementById('versatile-main-view').style.display = 'none';
+  const detailEl = document.getElementById('versatile-course-detail');
+  detailEl.style.display = 'block';
+  detailEl.innerHTML = '';
+
+  const header = document.createElement('div');
+  header.className = 'cp-detail-header';
+  header.innerHTML = `
+    <button class="cp-back-btn" title="Back to main view">&#8592;</button>
+    <span class="cp-detail-course-name">${sanitize(course.name)}</span>
+  `;
+  header.querySelector('.cp-back-btn').addEventListener('click', closeCourseDetail);
+  detailEl.appendChild(header);
+
+  renderDetailTasks(course, context, detailEl);
+  renderDetailNotes(course, context, detailEl);
+  renderDetailNotifications(course, context, detailEl);
+  renderDetailLinks(course, context, detailEl);
+
+  document.getElementById('Versatile').scrollTop = 0;
+}
+
+function initUrlWatcher(context) {
+  function handleUrlChange() {
+    const courseId = getCourseIdFromUrl(location.pathname);
+
+    if (courseId) {
+      const course = context.courses.find(c => c.id === courseId);
+      if (course && activeCourseId !== courseId) {
+        openCourseDetail(course, context);
+      }
+    } else {
+      if (activeCourseId !== null) {
+        closeCourseDetail();
+      }
+    }
+  }
+
+  const originalPushState = history.pushState.bind(history);
+  const originalReplaceState = history.replaceState.bind(history);
+
+  history.pushState = function (...args) {
+    originalPushState(...args);
+    handleUrlChange();
+  };
+  history.replaceState = function (...args) {
+    originalReplaceState(...args);
+    handleUrlChange();
+  };
+
+  window.addEventListener('popstate', handleUrlChange);
+
+  // Check URL on initial load
+  handleUrlChange();
+}
+
+// 9. Bootstrap -------------
 
 async function initVersatile() {
   try {
