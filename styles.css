@@ -352,3 +352,136 @@ body:not(.versatile-hidden) #right-side {
     background-color: #0770a3;
     transform: scale(1.08);
 }
+
+/* Clickable course cards */
+.cp-topic-card--clickable {
+    cursor: pointer;
+    transition: background-color 0.12s, border-color 0.12s;
+}
+
+.cp-topic-card--clickable:hover {
+    background-color: #e8f4fb;
+    border-color: #0770a3;
+}
+
+/* Course detail header (back button + course name) */
+.cp-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e0e6e9;
+}
+
+.cp-back-btn {
+    background: none;
+    border: 1px solid #c7cdd1;
+    border-radius: 3px;
+    padding: 3px 8px;
+    font-size: 0.85rem;
+    color: #0770a3;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.cp-back-btn:hover {
+    background-color: #e8f4fb;
+    border-color: #0770a3;
+}
+
+.cp-detail-course-name {
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: #2d3b45;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Course notes textarea */
+.cp-notes-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #c7cdd1;
+    border-radius: 3px;
+    padding: 6px 8px;
+    font-size: 0.8rem;
+    font-family: inherit;
+    min-height: 80px;
+    resize: vertical;
+    display: block;
+}
+
+.cp-notes-textarea:focus {
+    outline: none;
+    border-color: #0770a3;
+}
+
+.cp-notes-status {
+    font-size: 0.7rem;
+    color: #556572;
+    margin: 3px 0 0 0;
+    min-height: 1em;
+}
+
+/* Add link button (mirrors add task button) */
+.cp-add-link-btn {
+    font-size: 0.8rem;
+    color: #0770a3;
+    background: none;
+    border: 1px dashed #0770a3;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    margin-top: 4px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.cp-add-link-btn:hover {
+    background-color: #e8f4fb;
+}
+
+/* Add link inline form */
+.cp-add-link-form {
+    background: #ffffff;
+    border: 1px solid #c7cdd1;
+    border-radius: 4px;
+    padding: 10px;
+    margin-top: 6px;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cp-add-link-form input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #c7cdd1;
+    border-radius: 3px;
+    padding: 5px 7px;
+    font-size: 0.8rem;
+    font-family: inherit;
+}
+
+.cp-link-save-btn {
+    background-color: #0770a3;
+    color: #ffffff;
+    border: none;
+    border-radius: 3px;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+/* Link anchor style */
+.cp-link-anchor {
+    color: #0770a3;
+    text-decoration: none;
+    word-break: break-all;
+}
+
+.cp-link-anchor:hover {
+    text-decoration: underline;
+}
