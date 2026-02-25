@@ -97,6 +97,30 @@ async function fetchCanvasTasks() {
   }
 }
 
+async function fetchCanvasCourses() {
+  const url = `/api/v1/users/self/favorites/courses`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (!response.ok) {
+      console.error(`[Versatile] Canvas API error (courses): ${response.status} ${response.statusText}`);
+      return [];
+    }
+
+    const data = await response.json();
+    return data.filter(course => course.name && !course.access_restricted_by_date);
+
+  } catch (err) {
+    console.error('[Versatile] fetchCanvasCourses failed:', err);
+    return [];
+  }
+}
+
 // 5. Render ------
 
 function sanitize(str) {
@@ -215,6 +239,24 @@ function renderTodoSection(canvasTasks, shadowTasks, taskPriorities) {
   });
 }
 
+function renderTopicsSection(courses) {
+  const container = document.getElementById('versatile-topics-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (courses.length === 0) {
+    container.innerHTML = '<p class="cp-task-date" style="padding:4px 0;">No active courses found.</p>';
+    return;
+  }
+
+  courses.forEach(course => {
+    const card = document.createElement('div');
+    card.className = 'cp-topic-card';
+    card.innerHTML = `<p class="cp-title">${sanitize(course.name)}</p>`;
+    container.appendChild(card);
+  });
+}
+
 // 6. Handlers -------
 
 async function handleAddTask(canvasTasks) {
@@ -320,9 +362,8 @@ function initSidebar() {
 
     <div class="cp-section">
       <div class="section-title">Topics</div>
-      <div class="cp-topic-card"><p class="cp-title">CS 3214: Computer Systems</p></div>
-      <div class="cp-topic-card"><p class="cp-title">CS 3304: Comparative Languages</p></div>
-      <div class="cp-topic-card"><p class="cp-title">CS 3114: Data Structures and Algorithms</p></div>
+      <div id="versatile-topics-list">
+        </div>
     </div>
 
     <div class="cp-section">
@@ -362,9 +403,10 @@ async function initVersatile() {
     initSidebar();
     console.debug('[Versatile] Sidebar skeleton built.');
 
-    const [storageData, rawItems] = await Promise.all([
+    const [storageData, rawItems, courses] = await Promise.all([
       loadStorage(),
-      fetchCanvasTasks()
+      fetchCanvasTasks(),
+      fetchCanvasCourses()
     ]);
 
     console.debug('[Versatile] Storage loaded:', {
@@ -388,6 +430,8 @@ async function initVersatile() {
     } else if (canvasTasks.length > 0) {
       console.debug(`[Versatile] ${canvasTasks.length} Canvas task(s) due this week.`);
     }
+
+    renderTopicsSection(courses);
 
     sortMode = savedSortMode;
 
