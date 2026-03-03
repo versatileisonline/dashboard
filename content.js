@@ -41,13 +41,22 @@ function saveCourseLinks(courseLinks) {
 
 // 2. Date/formating helpers ----------
 
-function getEndOfWeek() {
+function getWeekBounds(offset = 0) {
   const now = new Date();
-  const daysUntilSunday = (7 - now.getDay()) % 7;
-  const end = new Date(now);
-  end.setDate(now.getDate() + daysUntilSunday);
+  const start = new Date(now);
+  start.setDate(now.getDate() - now.getDay() + offset * 7);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
   end.setHours(23, 59, 59, 999);
-  return end;
+  return { start, end };
+}
+
+function formatWeekLabel(offset = 0) {
+  const { start, end } = getWeekBounds(offset);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmt = d => `${months[d.getMonth()]} ${d.getDate()}`;
+  return `${fmt(start)} – ${fmt(end)}`;
 }
 
 function formatDueDate(isoString) {
@@ -91,28 +100,29 @@ function normalizeCanvasItem(item) {
   };
 }
 
-function filterCanvasItems(items) {
-  const now = new Date();
-  const endOfWeek = getEndOfWeek();
-  const twoWeeksAgo = new Date(now);
-  twoWeeksAgo.setDate(now.getDate() - 14);
+function filterCanvasItems(items, offset = 0) {
+  const { start, end } = getWeekBounds(offset);
   const allowed = new Set(['assignment', 'quiz']);
 
   return items.filter(item => {
     if (!allowed.has(item.plannable_type)) return false;
     if (item.submissions && item.submissions.submitted === true) return false;
     const due = new Date(item.plannable_date);
-    if (due < twoWeeksAgo) return false;
-    if (due > endOfWeek) return false;
-    return true;
+    return due >= start && due <= end;
   });
 }
 
 // 4. Canvas Fetching ----------
 
 async function fetchCanvasTasks() {
-  const today = new Date().toISOString().split('T')[0];
-  const url = `/api/v1/planner/items?per_page=50&start_date=${today}`;
+  const { start: weekStart } = getWeekBounds(0);
+  const pastDate = new Date(weekStart);
+  pastDate.setDate(weekStart.getDate() - 28);
+  const futureDate = new Date(weekStart);
+  futureDate.setDate(weekStart.getDate() + 28);
+  const startDate = pastDate.toISOString().split('T')[0];
+  const endDate = futureDate.toISOString().split('T')[0];
+  const url = `/api/v1/planner/items?per_page=100&start_date=${startDate}&end_date=${endDate}`;
 
   try {
     const response = await fetch(url, {
@@ -299,6 +309,8 @@ function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks, refreshCa
 
 const PRIORITY_RANK = { xtrm: 0, med: 1, low: 2 };
 let sortMode = 'date'; // 'date' | 'priority'
+let weekOffset = 0;
+let rawCanvasTasks = [];
 
 function sortTasks(tasks, taskPriorities) {
   if (sortMode === 'priority') {
@@ -317,9 +329,15 @@ function renderTodoSection(canvasTasks, shadowTasks, taskPriorities) {
   if (!container) return;
   container.innerHTML = '';
 
+  const { start, end } = getWeekBounds(weekOffset);
+  const filteredShadow = shadowTasks.filter(t => {
+    const due = new Date(t.dueAt);
+    return due >= start && due <= end;
+  });
+
   const allTasks = sortTasks([
     ...canvasTasks.map(normalizeCanvasItem),
-    ...shadowTasks
+    ...filteredShadow
   ], taskPriorities);
 
   if (allTasks.length === 0) {
@@ -759,6 +777,11 @@ function initSidebar(collapsed = false) {
           <div class="section-title">To-Do</div>
           <button id="versatile-sort-btn" title="Sort by date">Date</button>
         </div>
+        <div class="vtask-week-nav">
+          <button id="vtask-week-prev" title="Previous week">&#9664;</button>
+          <span id="vtask-week-label"></span>
+          <button id="vtask-week-next" title="Next week">&#9654;</button>
+        </div>
         <div id="versatile-todo-list"></div>
         <button id="versatile-add-task-btn">+ Add Task</button>
         <div id="versatile-add-task-form" style="display:none;">
@@ -965,7 +988,8 @@ async function initVersatile() {
       shadowTasks, taskPriorities, sidebarCollapsed, sortMode: savedSortMode,
       courseNotes, dismissedNotifications, courseLinks
     } = storageData;
-    const canvasTasks = rawItems ? filterCanvasItems(rawItems) : [];
+    rawCanvasTasks = rawItems || [];
+    let canvasTasks = filterCanvasItems(rawCanvasTasks, weekOffset);
 
     if (rawItems && rawItems.length > 0 && canvasTasks.length === 0) {
       console.warn(`[Versatile] Canvas returned ${rawItems.length} item(s) but 0 passed the week filter — all may be outside this week's range or already submitted.`);
@@ -1005,6 +1029,29 @@ async function initVersatile() {
       updateSortBtn();
       const latestStorage = await loadStorage();
       renderTodoSection(canvasTasks, latestStorage.shadowTasks, latestStorage.taskPriorities);
+    });
+
+    // Week navigation
+    const weekLabel = document.getElementById('vtask-week-label');
+    function updateWeekNav() {
+      weekLabel.textContent = formatWeekLabel(weekOffset);
+    }
+    updateWeekNav();
+
+    document.getElementById('vtask-week-prev').addEventListener('click', async () => {
+      weekOffset--;
+      updateWeekNav();
+      canvasTasks = filterCanvasItems(rawCanvasTasks, weekOffset);
+      const latest = await loadStorage();
+      renderTodoSection(canvasTasks, latest.shadowTasks, latest.taskPriorities);
+    });
+
+    document.getElementById('vtask-week-next').addEventListener('click', async () => {
+      weekOffset++;
+      updateWeekNav();
+      canvasTasks = filterCanvasItems(rawCanvasTasks, weekOffset);
+      const latest = await loadStorage();
+      renderTodoSection(canvasTasks, latest.shadowTasks, latest.taskPriorities);
     });
 
     document.getElementById('vtask-submit').addEventListener('click', () => {

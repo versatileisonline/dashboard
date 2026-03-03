@@ -251,6 +251,39 @@ body:not(.versatile-hidden) #right-side {
     color: #556572;
 }
 
+/* Week navigation row */
+.vtask-week-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    gap: 4px;
+}
+
+.vtask-week-nav button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #556572;
+    font-size: 0.65rem;
+    padding: 4px 6px;
+    border-radius: 4px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.vtask-week-nav button:hover {
+    background-color: #e8f0f5;
+    color: #2d3b45;
+}
+
+#vtask-week-label {
+    font-size: 0.75rem;
+    color: #556572;
+    text-align: center;
+    flex: 1;
+}
+
 /* To-Do section header with sort button */
 .vtask-section-header {
     display: flex;
