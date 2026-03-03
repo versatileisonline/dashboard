@@ -1,3 +1,21 @@
-# Canvas+ Dashboard Extension
+# Canvas+ 
 
-# helo heh
+###### Description
+Students often face the issue of a fragmented workflow. While Canvas is the primary Learning Management System (LMS) for Virginia Tech and most other universities, it rarely capture sthe full scope of student's academic responsibilites. 
+
+We purpose Canvas+, a Chromimum-based browser extension that injects a "Course Homepage" interface directly into the existing Canvas Dashboard. Canvas+ will integrate seamlessly into the students' existing workflow without the need to visit another site.
+
+###### Installation
+1. Open Chrome then chrome extensions
+2. Enable `Developer mode` (top-right).
+3. Click `Load unpacked`.
+4. Select Dashboard folder within your own directory
+5. Open your Canvas dashboard (`https://<school>.instructure.com/` or `https://canvas.vt.edu/`) and refresh.
+
+If the sidebar does not appear:
+1. Open DevTools on Canvas (`Cmd+Option+I`) and check Console for `[Versatile]` logs.
+2. Confirm the extension is enabled in `chrome://extensions`.
+3. Click `Reload` on the extension card, then refresh Canvas again.
+
+
+Creators: Bryan Torres (bryantorres), Caiden Romero (caidenromero), Garrett Wright (garrettw02), Aneesh Tummeti (artummeti)
