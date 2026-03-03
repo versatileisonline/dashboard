@@ -475,6 +475,16 @@ body:not(.versatile-hidden) #right-side {
     cursor: pointer;
 }
 
+/* Canvas task title link */
+.cp-canvas-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.cp-canvas-link:hover {
+    text-decoration: underline;
+}
+
 /* Link anchor style */
 .cp-link-anchor {
     color: #0770a3;

@@ -86,7 +86,8 @@ function normalizeCanvasItem(item) {
     courseId: item.course_id,
     dueAt: item.plannable_date,
     source: 'canvas',
-    description: ''
+    description: '',
+    url: item.html_url || item.plannable?.html_url || ''
   };
 }
 
@@ -217,6 +218,9 @@ function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks, refreshCa
 
   const safeTitle = sanitize(task.title);
   const safeCoursePrefix = task.courseName ? `${sanitize(task.courseName)} — ` : '';
+  const titleHtml = task.source === 'canvas' && task.url
+    ? `<a href="${sanitize(task.url)}" class="cp-canvas-link">${safeTitle}</a>`
+    : safeTitle;
   const hasExternalLink = task.source === 'shadow' && !!task.externalLink;
   const externalLinkHtml = hasExternalLink
     ? `<p class="cp-task-link"><a href="${sanitize(task.externalLink)}" target="_blank" rel="noopener noreferrer">Open external link</a></p>`
@@ -226,7 +230,7 @@ function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks, refreshCa
     : '';
 
   card.innerHTML = `
-    <p class="cp-title">${safeTitle}  ${badge}</p>
+    <p class="cp-title">${titleHtml}  ${badge}</p>
     <p class="cp-task-date">${safeCoursePrefix}${formatDueDate(task.dueAt)}</p>
     ${externalLinkHtml}
     <div class="vtask-priority-row">
