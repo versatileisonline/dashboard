@@ -21,21 +21,55 @@ function loadStorage() {
 }
 
 function saveStorage(shadowTasks, taskPriorities) {
-  return new Promise(resolve => {
-    chrome.storage.local.set({ shadowTasks, taskPriorities }, resolve);
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.set({ shadowTasks, taskPriorities }, () => {
+      if (chrome.runtime.lastError) {
+        console.error('[Versatile] saveStorage failed:', chrome.runtime.lastError.message);
+        reject(new Error(chrome.runtime.lastError.message));
+      } else {
+        resolve();
+      }
+    });
   });
 }
 
 function saveCourseNotes(courseNotes) {
-  return new Promise(resolve => chrome.storage.local.set({ courseNotes }, resolve));
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.set({ courseNotes }, () => {
+      if (chrome.runtime.lastError) {
+        console.error('[Versatile] saveCourseNotes failed:', chrome.runtime.lastError.message);
+        reject(new Error(chrome.runtime.lastError.message));
+      } else {
+        resolve();
+      }
+    });
+  });
 }
 
 function saveDismissedNotifications(dismissedNotifications) {
-  return new Promise(resolve => chrome.storage.local.set({ dismissedNotifications }, resolve));
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.set({ dismissedNotifications }, () => {
+      if (chrome.runtime.lastError) {
+        console.error('[Versatile] saveDismissedNotifications failed:', chrome.runtime.lastError.message);
+        reject(new Error(chrome.runtime.lastError.message));
+      } else {
+        resolve();
+      }
+    });
+  });
 }
 
 function saveCourseLinks(courseLinks) {
-  return new Promise(resolve => chrome.storage.local.set({ courseLinks }, resolve));
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.set({ courseLinks }, () => {
+      if (chrome.runtime.lastError) {
+        console.error('[Versatile] saveCourseLinks failed:', chrome.runtime.lastError.message);
+        reject(new Error(chrome.runtime.lastError.message));
+      } else {
+        resolve();
+      }
+    });
+  });
 }
 
 
@@ -122,22 +156,33 @@ async function fetchCanvasTasks() {
   futureDate.setDate(weekStart.getDate() + 28);
   const startDate = pastDate.toISOString().split('T')[0];
   const endDate = futureDate.toISOString().split('T')[0];
-  const url = `/api/v1/planner/items?per_page=100&start_date=${startDate}&end_date=${endDate}`;
+
+  let url = `/api/v1/planner/items?per_page=100&start_date=${startDate}&end_date=${endDate}`;
+  const allData = [];
 
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      credentials: 'include',
-      headers: { 'Accept': 'application/json' }
-    });
+    while (url) {
+      const response = await fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' }
+      });
 
-    if (!response.ok) {
-      console.error(`[Versatile] Canvas API error: ${response.status} ${response.statusText}`);
-      return null;
+      if (!response.ok) {
+        console.error(`[Versatile] Canvas API error: ${response.status} ${response.statusText}`);
+        return null;
+      }
+
+      const page = await response.json();
+      allData.push(...page);
+
+      // Follow Link: <url>; rel="next" header for pagination
+      const linkHeader = response.headers.get('Link') || '';
+      const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+      url = nextMatch ? nextMatch[1] : null;
     }
 
-    const data = await response.json();
-    return data;
+    return allData;
 
   } catch (err) {
     console.error('[Versatile] fetchCanvasTasks failed:', err);
@@ -221,6 +266,19 @@ function notifTypeLabel(notif) {
   }
 }
 
+// For Canvas API URLs (may be relative paths or absolute https).
+// Allows /path URLs and http(s):// URLs; blocks javascript:, data:, etc.
+function isSafeCanvasUrl(url) {
+  if (!url) return false;
+  if (url.startsWith('/')) return true;
+  try {
+    const parsed = new URL(url);
+    return ['http:', 'https:'].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
 function normalizeExternalUrl(rawUrl) {
   if (!rawUrl) return '';
   const trimmed = rawUrl.trim();
@@ -228,7 +286,9 @@ function normalizeExternalUrl(rawUrl) {
   const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 
   try {
-    return new URL(withProtocol).toString();
+    const parsed = new URL(withProtocol);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+    return parsed.toString();
   } catch {
     return null;
   }
@@ -239,27 +299,14 @@ function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks, refreshCa
   const card = document.createElement('div');
   card.className = 'cp-task-card' + (priority ? ` priority-${priority}` : '');
 
-  const badge = task.source === 'shadow'
-    ? '<span class="vtask-badge">custom</span>'
-    : '';
-
-  const safeTitle = sanitize(task.title);
   const safeCoursePrefix = task.courseName ? `${sanitize(task.courseName)} — ` : '';
-  const titleHtml = task.source === 'canvas' && task.url
-    ? `<a href="${sanitize(task.url)}" class="cp-canvas-link">${safeTitle}</a>`
-    : safeTitle;
-  const hasExternalLink = task.source === 'shadow' && !!task.externalLink;
-  const externalLinkHtml = hasExternalLink
-    ? `<p class="cp-task-link"><a href="${sanitize(task.externalLink)}" target="_blank" rel="noopener noreferrer">Open external link</a></p>`
-    : '';
   const taskActionHtml = task.source === 'shadow'
     ? `<div class="vtask-actions-row"><button class="vtask-delete-btn" data-id="${task.id}" title="Delete custom task">Delete</button></div>`
     : '';
 
   card.innerHTML = `
-    <p class="cp-title">${titleHtml}  ${badge}</p>
+    <p class="cp-title"></p>
     <p class="cp-task-date">${safeCoursePrefix}${formatDueDate(task.dueAt)}</p>
-    ${externalLinkHtml}
     <div class="vtask-priority-row">
       <button class="vtask-dot vtask-dot-low  ${priority === 'low' ? 'vtask-dot-active' : ''}" data-priority="low"  data-id="${task.id}"></button>
       <button class="vtask-dot vtask-dot-med  ${priority === 'med' ? 'vtask-dot-active' : ''}" data-priority="med"  data-id="${task.id}"></button>
@@ -267,6 +314,39 @@ function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks, refreshCa
     </div>
     ${taskActionHtml}
   `;
+
+  // Build title element via DOM; isSafeCanvasUrl blocks javascript:/data: schemes
+  const titleEl = card.querySelector('.cp-title');
+  if (task.source === 'canvas' && task.url && isSafeCanvasUrl(task.url)) {
+    const anchor = document.createElement('a');
+    anchor.href = task.url;
+    anchor.className = 'cp-canvas-link';
+    anchor.textContent = task.title;
+    titleEl.appendChild(anchor);
+  } else {
+    titleEl.textContent = task.title;
+  }
+  if (task.source === 'shadow') {
+    const badge = document.createElement('span');
+    badge.className = 'vtask-badge';
+    badge.textContent = 'custom';
+    titleEl.appendChild(document.createTextNode('\u00A0\u00A0'));
+    titleEl.appendChild(badge);
+  }
+
+  // Build external link via DOM to prevent javascript: URI injection
+  if (task.source === 'shadow' && task.externalLink) {
+    const linkP = document.createElement('p');
+    linkP.className = 'cp-task-link';
+    const anchor = document.createElement('a');
+    anchor.href = task.externalLink;  // DOM property assignment
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
+    anchor.textContent = 'Open external link';
+    linkP.appendChild(anchor);
+    // Insert before the priority row
+    card.querySelector('.vtask-priority-row').before(linkP);
+  }
 
   card.querySelectorAll('.vtask-dot').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -400,8 +480,16 @@ function renderNotificationsSection(notifications) {
     card.innerHTML = `
       <p class="cp-title">${textTitle}</p>
       ${typeLabel ? `<p class="cp-task-date">${sanitize(typeLabel)}</p>` : ''}
-      ${notif.html_url ? `<p class="cp-task-link"><a href="${sanitize(notif.html_url)}">View details</a></p>` : ''}
     `;
+    if (notif.html_url && isSafeCanvasUrl(notif.html_url)) {
+      const linkP = document.createElement('p');
+      linkP.className = 'cp-task-link';
+      const anchor = document.createElement('a');
+      anchor.href = notif.html_url;
+      anchor.textContent = 'View details';
+      linkP.appendChild(anchor);
+      card.appendChild(linkP);
+    }
 
     container.appendChild(card);
   });
@@ -410,7 +498,8 @@ function renderNotificationsSection(notifications) {
 // 6. Course Detail Sub-Render Functions -------
 
 function renderDetailTasks(course, context, container) {
-  const { canvasTasks, shadowTasks, taskPriorities } = context;
+  const canvasTasks = filterCanvasItems(rawCanvasTasks, weekOffset);
+  const { shadowTasks, taskPriorities } = context;
   const section = document.createElement('div');
   section.className = 'cp-section';
 
@@ -419,9 +508,15 @@ function renderDetailTasks(course, context, container) {
   titleEl.textContent = 'Tasks';
   section.appendChild(titleEl);
 
+  const { start, end } = getWeekBounds(weekOffset);
+  const filteredShadow = shadowTasks.filter(t => {
+    const due = new Date(t.dueAt);
+    return due >= start && due <= end;
+  });
+
   const allTasks = sortTasks([
     ...canvasTasks.map(normalizeCanvasItem),
-    ...shadowTasks
+    ...filteredShadow
   ], taskPriorities);
 
   const filtered = allTasks.filter(task =>
@@ -441,7 +536,7 @@ function renderDetailTasks(course, context, container) {
         (updShadow, updPriorities) => {
           context.taskPriorities = updPriorities;
           context.shadowTasks = updShadow;
-          renderTodoSection(canvasTasks, updShadow, updPriorities);
+          renderTodoSection(filterCanvasItems(rawCanvasTasks, weekOffset), updShadow, updPriorities);
           openCourseDetail(course, context);
         }
       ));
@@ -525,8 +620,16 @@ function renderDetailNotifications(course, context, container) {
       card.innerHTML = `
         <p class="cp-title">${textTitle}</p>
         ${typeLabel ? `<p class="cp-task-date">${sanitize(typeLabel)}</p>` : ''}
-        ${notif.html_url ? `<p class="cp-task-link"><a href="${sanitize(notif.html_url)}">View details</a></p>` : ''}
       `;
+      if (notif.html_url && isSafeCanvasUrl(notif.html_url)) {
+        const linkP = document.createElement('p');
+        linkP.className = 'cp-task-link';
+        const anchor = document.createElement('a');
+        anchor.href = notif.html_url;
+        anchor.textContent = 'View details';
+        linkP.appendChild(anchor);
+        card.appendChild(linkP);
+      }
 
       const dismissRow = document.createElement('div');
       dismissRow.className = 'vtask-actions-row';
@@ -535,9 +638,10 @@ function renderDetailNotifications(course, context, container) {
       dismissBtn.textContent = 'Mark as Read';
       dismissBtn.addEventListener('click', async () => {
         const hash = notifHash(notif);
+        const currentDismissed = context.dismissedNotifications[courseKey] || [];
         const updatedDismissed = {
           ...context.dismissedNotifications,
-          [courseKey]: [...dismissed, hash]
+          [courseKey]: [...currentDismissed, hash]
         };
         context.dismissedNotifications = updatedDismissed;
         await saveDismissedNotifications(updatedDismissed);
@@ -588,15 +692,17 @@ function renderDetailLinks(course, context, container) {
       const card = document.createElement('div');
       card.className = 'cp-topic-card';
 
-      const displayLabel = link.label || link.url;
-      const safeUrl = sanitize(link.url);
-      const safeLabel = sanitize(displayLabel);
-
-      card.innerHTML = `
-        <p class="cp-title" style="font-weight:normal;">
-          <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="cp-link-anchor">${safeLabel}</a>
-        </p>
-      `;
+      const titleP = document.createElement('p');
+      titleP.className = 'cp-title';
+      titleP.style.fontWeight = 'normal';
+      const anchor = document.createElement('a');
+      anchor.href = link.url;  // DOM property assignment
+      anchor.target = '_blank';
+      anchor.rel = 'noopener noreferrer';
+      anchor.className = 'cp-link-anchor';
+      anchor.textContent = link.label || link.url;
+      titleP.appendChild(anchor);
+      card.appendChild(titleP);
 
       const deleteRow = document.createElement('div');
       deleteRow.className = 'vtask-actions-row';
@@ -941,7 +1047,8 @@ function initCourseDropdown(courses) {
       const option = document.createElement('div');
       option.className = 'vtask-course-option';
       option.textContent = name;
-      option.addEventListener('mousedown', () => {
+      option.addEventListener('mousedown', (e) => {
+        e.preventDefault(); // keeps focus on input so blur doesn't fire first
         input.value = name;
         dropdown.style.display = 'none';
       });
@@ -953,13 +1060,14 @@ function initCourseDropdown(courses) {
   input.addEventListener('focus', () => showOptions(input.value));
   input.addEventListener('input', () => showOptions(input.value));
   input.addEventListener('blur', () => {
-    setTimeout(() => { dropdown.style.display = 'none'; }, 150);
+    dropdown.style.display = 'none';
   });
 }
 
 // 10. Bootstrap -------------
 
 async function initVersatile() {
+  if (document.getElementById('Versatile')) return;
   try {
     const storageData = await loadStorage();
     initSidebar(storageData.sidebarCollapsed);
@@ -998,7 +1106,6 @@ async function initVersatile() {
     }
 
     const context = {
-      canvasTasks,
       shadowTasks,
       taskPriorities,
       notifications,
@@ -1028,7 +1135,8 @@ async function initVersatile() {
       chrome.storage.local.set({ sortMode });
       updateSortBtn();
       const latestStorage = await loadStorage();
-      renderTodoSection(canvasTasks, latestStorage.shadowTasks, latestStorage.taskPriorities);
+      const currentCanvasTasks = filterCanvasItems(rawCanvasTasks, weekOffset);
+      renderTodoSection(currentCanvasTasks, latestStorage.shadowTasks, latestStorage.taskPriorities);
     });
 
     // Week navigation
