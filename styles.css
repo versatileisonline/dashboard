@@ -334,18 +334,24 @@ body:not(.versatile-hidden) #right-side {
     height: 44px;
     border-radius: 50%;
     background-color: #2d3b45;
-    color: #ffffff;
     border: none;
     cursor: pointer;
     z-index: 9999;
     display: none;
     align-items: center;
     justify-content: center;
-    font-size: 1rem;
-    font-weight: bold;
+    padding: 0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
     transition: background-color 0.15s, transform 0.15s;
-    font-family: inherit;
+    overflow: hidden;
+}
+
+#versatile-fab img {
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
 }
 
 #versatile-fab:hover {
@@ -494,4 +500,42 @@ body:not(.versatile-hidden) #right-side {
 
 .cp-link-anchor:hover {
     text-decoration: underline;
+}
+
+/* Course combobox dropdown */
+.vtask-course-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.vtask-course-wrapper input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.vtask-course-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1px solid #c7cdd1;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    max-height: 160px;
+    overflow-y: auto;
+    z-index: 10000;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.vtask-course-option {
+    padding: 7px 10px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    color: #2d3b45;
+}
+
+.vtask-course-option:hover {
+    background-color: #e8f0f5;
 }

@@ -194,6 +194,23 @@ function notifHash(notif) {
   return notif.html_url || `${notif.type}::${notif.title}::${notif.course_id}`;
 }
 
+function notifTypeLabel(notif) {
+  switch (notif.type) {
+    case 'Announcement': return 'Announcement';
+    case 'DiscussionTopic': return 'Discussion';
+    case 'Conversation': return 'Conversation';
+    case 'Message': return 'Message';
+    case 'Conference':
+    case 'WebConference': return 'Conference';
+    case 'Collaboration': return 'Collaboration';
+    case 'Submission':
+      if (notif.grade != null) return `Graded — ${notif.grade}`;
+      if (notif.score != null) return `Graded — ${notif.score}`;
+      return 'Submission';
+    default: return notif.type || '';
+  }
+}
+
 function normalizeExternalUrl(rawUrl) {
   if (!rawUrl) return '';
   const trimmed = rawUrl.trim();
@@ -358,15 +375,15 @@ function renderNotificationsSection(notifications) {
     card.className = 'cp-topic-card';
 
     const rawTitle = notif.title || notif.message || `New ${notif.type}`;
-
     const cleanText = rawTitle.replace(/<[^>]*>?/gm, '');
     const textTitle = sanitize(cleanText).substring(0, 80) + (cleanText.length > 80 ? '...' : '');
+    const typeLabel = notifTypeLabel(notif);
 
-    card.innerHTML = `<p class="cp-title">${textTitle}</p>`;
-
-    if (notif.html_url) {
-      card.innerHTML += `<p class="cp-task-link"><a href="${sanitize(notif.html_url)}" target="_blank">View details</a></p>`;
-    }
+    card.innerHTML = `
+      <p class="cp-title">${textTitle}</p>
+      ${typeLabel ? `<p class="cp-task-date">${sanitize(typeLabel)}</p>` : ''}
+      ${notif.html_url ? `<p class="cp-task-link"><a href="${sanitize(notif.html_url)}">View details</a></p>` : ''}
+    `;
 
     container.appendChild(card);
   });
@@ -486,10 +503,12 @@ function renderDetailNotifications(course, context, container) {
       const cleanText = rawTitle.replace(/<[^>]*>?/gm, '');
       const textTitle = sanitize(cleanText).substring(0, 80) + (cleanText.length > 80 ? '...' : '');
 
-      card.innerHTML = `<p class="cp-title">${textTitle}</p>`;
-      if (notif.html_url) {
-        card.innerHTML += `<p class="cp-task-link"><a href="${sanitize(notif.html_url)}" target="_blank" rel="noopener noreferrer">View details</a></p>`;
-      }
+      const typeLabel = notifTypeLabel(notif);
+      card.innerHTML = `
+        <p class="cp-title">${textTitle}</p>
+        ${typeLabel ? `<p class="cp-task-date">${sanitize(typeLabel)}</p>` : ''}
+        ${notif.html_url ? `<p class="cp-task-link"><a href="${sanitize(notif.html_url)}">View details</a></p>` : ''}
+      `;
 
       const dismissRow = document.createElement('div');
       dismissRow.className = 'vtask-actions-row';
@@ -724,13 +743,13 @@ function expandSidebar() {
 }
 
 
-function initSidebar() {
+function initSidebar(collapsed = false) {
   const sidebar = document.createElement('div');
   sidebar.id = 'Versatile';
 
   sidebar.innerHTML = `
     <div id="versatile-header">
-      <h2>Versatile</h2>
+      <h2>Canvas+</h2>
       <button id="versatile-collapse-btn" title="Hide sidebar">&#x2715;</button>
     </div>
 
@@ -744,7 +763,10 @@ function initSidebar() {
         <button id="versatile-add-task-btn">+ Add Task</button>
         <div id="versatile-add-task-form" style="display:none;">
           <input type="text" id="vtask-title" placeholder="Title" />
-          <input type="text" id="vtask-course" placeholder="Course (optional)" />
+          <div class="vtask-course-wrapper">
+            <input type="text" id="vtask-course" placeholder="Course (optional)" autocomplete="off" />
+            <div id="vtask-course-dropdown" class="vtask-course-dropdown"></div>
+          </div>
           <input type="text" id="vtask-link" placeholder="External URL (optional)" />
           <textarea id="vtask-desc" placeholder="Description (optional)"></textarea>
           <input type="datetime-local" id="vtask-due" />
@@ -770,14 +792,24 @@ function initSidebar() {
   `;
 
   document.body.appendChild(sidebar);
-  document.body.style.paddingRight = '350px';
 
   // FAB (floating button shown when sidebar is collapsed)
   const fab = document.createElement('button');
   fab.id = 'versatile-fab';
   fab.title = 'Open Versatile';
-  fab.textContent = 'V';
+  const logoImg = document.createElement('img');
+  logoImg.src = chrome.runtime.getURL('assets/canvas+_logo.png');
+  logoImg.alt = 'Versatile';
+  fab.appendChild(logoImg);
   document.body.appendChild(fab);
+
+  if (collapsed) {
+    sidebar.style.display = 'none';
+    fab.style.display = 'flex';
+    document.body.classList.add('versatile-hidden');
+  } else {
+    document.body.style.paddingRight = '350px';
+  }
 
   document.getElementById('versatile-collapse-btn').addEventListener('click', collapseSidebar);
   fab.addEventListener('click', expandSidebar);
@@ -864,15 +896,53 @@ function initUrlWatcher(context) {
   handleUrlChange();
 }
 
-// 9. Bootstrap -------------
+// 9. Course Dropdown ----------
+
+function initCourseDropdown(courses) {
+  const input = document.getElementById('vtask-course');
+  const dropdown = document.getElementById('vtask-course-dropdown');
+  if (!input || !dropdown || courses.length === 0) return;
+
+  const courseNames = courses.map(c => c.name);
+
+  function showOptions(query) {
+    const q = query.toLowerCase();
+    const matches = q
+      ? courseNames.filter(name => name.toLowerCase().includes(q))
+      : courseNames;
+
+    dropdown.innerHTML = '';
+    if (matches.length === 0) { dropdown.style.display = 'none'; return; }
+
+    matches.forEach(name => {
+      const option = document.createElement('div');
+      option.className = 'vtask-course-option';
+      option.textContent = name;
+      option.addEventListener('mousedown', () => {
+        input.value = name;
+        dropdown.style.display = 'none';
+      });
+      dropdown.appendChild(option);
+    });
+    dropdown.style.display = 'block';
+  }
+
+  input.addEventListener('focus', () => showOptions(input.value));
+  input.addEventListener('input', () => showOptions(input.value));
+  input.addEventListener('blur', () => {
+    setTimeout(() => { dropdown.style.display = 'none'; }, 150);
+  });
+}
+
+// 10. Bootstrap -------------
 
 async function initVersatile() {
   try {
-    initSidebar();
+    const storageData = await loadStorage();
+    initSidebar(storageData.sidebarCollapsed);
     console.debug('[Versatile] Sidebar skeleton built.');
 
-    const [storageData, rawItems, courses, notifications] = await Promise.all([
-      loadStorage(),
+    const [rawItems, courses, notifications] = await Promise.all([
       fetchCanvasTasks(),
       fetchCanvasCourses(),
       fetchCanvasNotifications()
@@ -915,12 +985,11 @@ async function initVersatile() {
     };
 
     renderTopicsSection(courses, context);
+    initCourseDropdown(courses);
 
     renderNotificationsSection(notifications);
 
     sortMode = savedSortMode;
-
-    if (sidebarCollapsed) collapseSidebar();
 
     // Sort button toggle
     const sortBtn = document.getElementById('versatile-sort-btn');

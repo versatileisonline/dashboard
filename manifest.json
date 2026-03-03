@@ -10,6 +10,12 @@
     "*://canvas.vt.edu/*",
     "*://*.instructure.com/*"
   ],
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*"],
+      "matches": ["*://canvas.vt.edu/*", "*://*.instructure.com/*"]
+    }
+  ],
   "content_scripts": [
     {
       "matches": [
