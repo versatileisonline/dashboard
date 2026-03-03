@@ -206,7 +206,7 @@ function normalizeExternalUrl(rawUrl) {
   }
 }
 
-function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks) {
+function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks, refreshCallback) {
   const priority = taskPriorities[task.id] || null;
   const card = document.createElement('div');
   card.className = 'cp-task-card' + (priority ? ` priority-${priority}` : '');
@@ -250,7 +250,11 @@ function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks) {
       }
 
       await saveStorage(shadowTasks, updated);
-      renderTodoSection(canvasTasks, shadowTasks, updated);
+      if (refreshCallback) {
+        refreshCallback(shadowTasks, updated);
+      } else {
+        renderTodoSection(canvasTasks, shadowTasks, updated);
+      }
     });
   });
 
@@ -261,7 +265,11 @@ function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks) {
       const updatedPriorities = { ...taskPriorities };
       delete updatedPriorities[taskId];
       await saveStorage(updatedShadow, updatedPriorities);
-      renderTodoSection(canvasTasks, updatedShadow, updatedPriorities);
+      if (refreshCallback) {
+        refreshCallback(updatedShadow, updatedPriorities);
+      } else {
+        renderTodoSection(canvasTasks, updatedShadow, updatedPriorities);
+      }
     });
   });
 
@@ -299,7 +307,10 @@ function renderTodoSection(canvasTasks, shadowTasks, taskPriorities) {
   }
 
   allTasks.forEach(task => {
-    container.appendChild(buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks));
+    container.appendChild(buildTaskCard(
+      task, taskPriorities, canvasTasks, shadowTasks,
+      (updShadow, updPriorities) => renderTodoSection(canvasTasks, updShadow, updPriorities)
+    ));
   });
 }
 
@@ -386,7 +397,15 @@ function renderDetailTasks(course, context, container) {
     section.appendChild(empty);
   } else {
     filtered.forEach(task => {
-      section.appendChild(buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks));
+      section.appendChild(buildTaskCard(
+        task, taskPriorities, canvasTasks, shadowTasks,
+        (updShadow, updPriorities) => {
+          context.taskPriorities = updPriorities;
+          context.shadowTasks = updShadow;
+          renderTodoSection(canvasTasks, updShadow, updPriorities);
+          openCourseDetail(course, context);
+        }
+      ));
     });
   }
 
@@ -781,6 +800,7 @@ function closeCourseDetail() {
 }
 
 function openCourseDetail(course, context) {
+  const isNewCourse = activeCourseId !== course.id;
   activeCourseId = course.id;
   document.getElementById('versatile-main-view').style.display = 'none';
   const detailEl = document.getElementById('versatile-course-detail');
@@ -801,7 +821,9 @@ function openCourseDetail(course, context) {
   renderDetailNotifications(course, context, detailEl);
   renderDetailLinks(course, context, detailEl);
 
-  document.getElementById('Versatile').scrollTop = 0;
+  if (isNewCourse) {
+    document.getElementById('Versatile').scrollTop = 0;
+  }
 }
 
 function initUrlWatcher(context) {
