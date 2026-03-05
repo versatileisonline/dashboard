@@ -4,7 +4,7 @@ function loadStorage() {
   return new Promise(resolve => {
     chrome.storage.local.get(
       ['shadowTasks', 'taskPriorities', 'sidebarCollapsed', 'sortMode',
-        'courseNotes', 'dismissedNotifications', 'courseLinks'],
+        'courseNotes', 'dismissedNotifications', 'courseLinks', 'customDueDates'],
       result => {
         resolve({
           shadowTasks: result.shadowTasks || [],
@@ -13,7 +13,8 @@ function loadStorage() {
           sortMode: result.sortMode || 'date',
           courseNotes: result.courseNotes || {},
           dismissedNotifications: result.dismissedNotifications || {},
-          courseLinks: result.courseLinks || {}
+          courseLinks: result.courseLinks || {},
+          customDueDates: result.customDueDates || {}
         });
       }
     );
@@ -51,6 +52,19 @@ function saveDismissedNotifications(dismissedNotifications) {
     chrome.storage.local.set({ dismissedNotifications }, () => {
       if (chrome.runtime.lastError) {
         console.error('[Versatile] saveDismissedNotifications failed:', chrome.runtime.lastError.message);
+        reject(new Error(chrome.runtime.lastError.message));
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+function saveCustomDueDates(customDueDates) {
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.set({ customDueDates }, () => {
+      if (chrome.runtime.lastError) {
+        console.error('[Versatile] saveCustomDueDates failed:', chrome.runtime.lastError.message);
         reject(new Error(chrome.runtime.lastError.message));
       } else {
         resolve();
@@ -104,6 +118,22 @@ function formatDueDate(isoString) {
   return `Due: ${days[d.getDay()]} ${months[d.getMonth()]} ${d.getDate()} at ${hours}:${minutes} ${ampm}`;
 }
 
+function toDatetimeLocalValue(isoString) {
+  if (!isoString) return '';
+  const d = new Date(isoString);
+  if (isNaN(d.getTime())) return '';
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function formatNotifDate(isoString) {
+  if (!isoString) return null;
+  const d = new Date(isoString);
+  if (isNaN(d.getTime())) return null;
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
 // 3. Misc Utilities ----------
 
 function debounce(fn, ms) {
@@ -134,14 +164,15 @@ function normalizeCanvasItem(item) {
   };
 }
 
-function filterCanvasItems(items, offset = 0) {
+function filterCanvasItems(items, offset = 0, customDueDates = {}) {
   const { start, end } = getWeekBounds(offset);
   const allowed = new Set(['assignment', 'quiz']);
 
   return items.filter(item => {
     if (!allowed.has(item.plannable_type)) return false;
     if (item.submissions && item.submissions.submitted === true) return false;
-    const due = new Date(item.plannable_date);
+    const effectiveDate = customDueDates[String(item.plannable_id)] || item.plannable_date;
+    const due = new Date(effectiveDate);
     return due >= start && due <= end;
   });
 }
@@ -294,26 +325,45 @@ function normalizeExternalUrl(rawUrl) {
   }
 }
 
-function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks, refreshCallback) {
+function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks, refreshCallback, customDueDates = {}) {
   const priority = taskPriorities[task.id] || null;
   const card = document.createElement('div');
   card.className = 'cp-task-card' + (priority ? ` priority-${priority}` : '');
 
-  const safeCoursePrefix = task.courseName ? `${sanitize(task.courseName)} — ` : '';
-  const taskActionHtml = task.source === 'shadow'
-    ? `<div class="vtask-actions-row"><button class="vtask-delete-btn" data-id="${task.id}" title="Delete custom task">Delete</button></div>`
-    : '';
+  // Build card structure via DOM — avoids XSS from task.id in attribute context
+  // and from formatDueDate output in innerHTML
+  const titlePlaceholder = document.createElement('p');
+  titlePlaceholder.className = 'cp-title';
+  card.appendChild(titlePlaceholder);
 
-  card.innerHTML = `
-    <p class="cp-title"></p>
-    <p class="cp-task-date">${safeCoursePrefix}${formatDueDate(task.dueAt)}</p>
-    <div class="vtask-priority-row">
-      <button class="vtask-dot vtask-dot-low  ${priority === 'low' ? 'vtask-dot-active' : ''}" data-priority="low"  data-id="${task.id}"></button>
-      <button class="vtask-dot vtask-dot-med  ${priority === 'med' ? 'vtask-dot-active' : ''}" data-priority="med"  data-id="${task.id}"></button>
-      <button class="vtask-dot vtask-dot-xtrm ${priority === 'xtrm' ? 'vtask-dot-active' : ''}" data-priority="xtrm" data-id="${task.id}"></button>
-    </div>
-    ${taskActionHtml}
-  `;
+  const dateEl = document.createElement('p');
+  dateEl.className = 'cp-task-date';
+  const dateText = formatDueDate(task.dueAt) || '';
+  dateEl.textContent = task.courseName ? `${task.courseName} — ${dateText}` : dateText;
+  card.appendChild(dateEl);
+
+  const priorityRow = document.createElement('div');
+  priorityRow.className = 'vtask-priority-row';
+  ['low', 'med', 'xtrm'].forEach(p => {
+    const dot = document.createElement('button');
+    dot.className = `vtask-dot vtask-dot-${p}${priority === p ? ' vtask-dot-active' : ''}`;
+    dot.dataset.priority = p;
+    dot.dataset.id = task.id;
+    priorityRow.appendChild(dot);
+  });
+  card.appendChild(priorityRow);
+
+  if (task.source === 'shadow') {
+    const deleteActionsRow = document.createElement('div');
+    deleteActionsRow.className = 'vtask-actions-row';
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'vtask-delete-btn';
+    deleteBtn.dataset.id = task.id;
+    deleteBtn.title = 'Delete custom task';
+    deleteBtn.textContent = 'Delete';
+    deleteActionsRow.appendChild(deleteBtn);
+    card.appendChild(deleteActionsRow);
+  }
 
   // Build title element via DOM; isSafeCanvasUrl blocks javascript:/data: schemes
   const titleEl = card.querySelector('.cp-title');
@@ -334,6 +384,16 @@ function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks, refreshCa
     titleEl.appendChild(badge);
   }
 
+  // "edited" badge on the date line for Canvas tasks with a custom due date
+  if (task.source === 'canvas' && task.isCustomDue) {
+    const dateLine = card.querySelector('.cp-task-date');
+    const badge = document.createElement('span');
+    badge.className = 'vtask-badge';
+    badge.textContent = 'edited';
+    dateLine.appendChild(document.createTextNode('\u00A0\u00A0'));
+    dateLine.appendChild(badge);
+  }
+
   // Build external link via DOM to prevent javascript: URI injection
   if (task.source === 'shadow' && task.externalLink) {
     const linkP = document.createElement('p');
@@ -346,6 +406,73 @@ function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks, refreshCa
     linkP.appendChild(anchor);
     // Insert before the priority row
     card.querySelector('.vtask-priority-row').before(linkP);
+  }
+
+  // Edit due date controls for Canvas tasks
+  if (task.source === 'canvas') {
+    const actionsRow = document.createElement('div');
+    actionsRow.className = 'vtask-actions-row';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'vtask-delete-btn';
+    editBtn.textContent = 'Edit due date';
+    actionsRow.appendChild(editBtn);
+
+    // Hoist resetBtn so the cancel handler can re-append it without recreating
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'vtask-delete-btn';
+    resetBtn.textContent = 'Reset';
+    resetBtn.addEventListener('click', async () => {
+      const updated = { ...customDueDates };
+      delete updated[task.id];
+      await saveCustomDueDates(updated);
+      if (refreshCallback) {
+        refreshCallback(shadowTasks, taskPriorities, updated);
+      }
+    });
+    if (task.isCustomDue) {
+      actionsRow.appendChild(resetBtn);
+    }
+
+    card.appendChild(actionsRow);
+
+    editBtn.addEventListener('click', () => {
+      actionsRow.innerHTML = '';
+      const input = document.createElement('input');
+      input.type = 'datetime-local';
+      input.value = toDatetimeLocalValue(task.dueAt);
+      input.className = 'vtask-due-edit-input';
+
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'vtask-delete-btn';
+      saveBtn.textContent = 'Save';
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'vtask-delete-btn';
+      cancelBtn.textContent = 'Cancel';
+
+      actionsRow.appendChild(input);
+      actionsRow.appendChild(saveBtn);
+      actionsRow.appendChild(cancelBtn);
+
+      saveBtn.addEventListener('click', async () => {
+        const val = input.value;
+        if (!val) return;
+        const updated = { ...customDueDates, [task.id]: new Date(val).toISOString() };
+        await saveCustomDueDates(updated);
+        if (refreshCallback) {
+          refreshCallback(shadowTasks, taskPriorities, updated);
+        }
+      });
+
+      cancelBtn.addEventListener('click', () => {
+        actionsRow.innerHTML = '';
+        actionsRow.appendChild(editBtn);
+        if (task.isCustomDue) {
+          actionsRow.appendChild(resetBtn);
+        }
+      });
+    });
   }
 
   card.querySelectorAll('.vtask-dot').forEach(btn => {
@@ -362,14 +489,14 @@ function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks, refreshCa
 
       await saveStorage(shadowTasks, updated);
       if (refreshCallback) {
-        refreshCallback(shadowTasks, updated);
+        refreshCallback(shadowTasks, updated, customDueDates);
       } else {
-        renderTodoSection(canvasTasks, shadowTasks, updated);
+        renderTodoSection(canvasTasks, shadowTasks, updated, customDueDates);
       }
     });
   });
 
-  card.querySelectorAll('.vtask-delete-btn').forEach(btn => {
+  card.querySelectorAll('.vtask-delete-btn[data-id]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const taskId = btn.dataset.id;
       const updatedShadow = shadowTasks.filter(taskItem => taskItem.id !== taskId);
@@ -377,9 +504,9 @@ function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks, refreshCa
       delete updatedPriorities[taskId];
       await saveStorage(updatedShadow, updatedPriorities);
       if (refreshCallback) {
-        refreshCallback(updatedShadow, updatedPriorities);
+        refreshCallback(updatedShadow, updatedPriorities, customDueDates);
       } else {
-        renderTodoSection(canvasTasks, updatedShadow, updatedPriorities);
+        renderTodoSection(canvasTasks, updatedShadow, updatedPriorities, customDueDates);
       }
     });
   });
@@ -404,7 +531,7 @@ function sortTasks(tasks, taskPriorities) {
   return [...tasks].sort((a, b) => new Date(a.dueAt) - new Date(b.dueAt));
 }
 
-function renderTodoSection(canvasTasks, shadowTasks, taskPriorities) {
+function renderTodoSection(canvasTasks, shadowTasks, taskPriorities, customDueDates = {}) {
   const container = document.getElementById('versatile-todo-list');
   if (!container) return;
   container.innerHTML = '';
@@ -416,7 +543,11 @@ function renderTodoSection(canvasTasks, shadowTasks, taskPriorities) {
   });
 
   const allTasks = sortTasks([
-    ...canvasTasks.map(normalizeCanvasItem),
+    ...canvasTasks.map(item => {
+      const normalized = normalizeCanvasItem(item);
+      const customDue = customDueDates[normalized.id];
+      return customDue ? { ...normalized, dueAt: customDue, isCustomDue: true } : normalized;
+    }),
     ...filteredShadow
   ], taskPriorities);
 
@@ -428,7 +559,11 @@ function renderTodoSection(canvasTasks, shadowTasks, taskPriorities) {
   allTasks.forEach(task => {
     container.appendChild(buildTaskCard(
       task, taskPriorities, canvasTasks, shadowTasks,
-      (updShadow, updPriorities) => renderTodoSection(canvasTasks, updShadow, updPriorities)
+      (updShadow, updPriorities, updCustomDueDates) => {
+        const refiltered = filterCanvasItems(rawCanvasTasks, weekOffset, updCustomDueDates);
+        renderTodoSection(refiltered, updShadow, updPriorities, updCustomDueDates);
+      },
+      customDueDates
     ));
   });
 }
@@ -455,7 +590,7 @@ function renderTopicsSection(courses, context) {
   });
 }
 
-function renderNotificationsSection(notifications) {
+function renderNotificationsSection(notifications, context) {
   const container = document.getElementById('versatile-notifications-list');
   if (!container) return;
   container.innerHTML = '';
@@ -465,8 +600,22 @@ function renderNotificationsSection(notifications) {
     return;
   }
 
-  // Limit to the 10 most recent notifications
-  const recentNotifs = notifications.slice(0, 10);
+  const courseMap = {};
+  (context.courses || []).forEach(c => { courseMap[c.id] = c.name; });
+
+  // Filter out already-dismissed notifications, then take the 10 most recent
+  const undismissed = notifications.filter(notif => {
+    const courseKey = notif.course_id ? String(notif.course_id) : '__global__';
+    const dismissed = (context.dismissedNotifications || {})[courseKey] || [];
+    return !dismissed.includes(notifHash(notif));
+  });
+
+  const recentNotifs = undismissed.slice(0, 10);
+
+  if (recentNotifs.length === 0) {
+    container.innerHTML = '<p class="cp-task-date" style="padding:4px 0;">No recent notifications.</p>';
+    return;
+  }
 
   recentNotifs.forEach(notif => {
     const card = document.createElement('div');
@@ -476,11 +625,16 @@ function renderNotificationsSection(notifications) {
     const cleanText = rawTitle.replace(/<[^>]*>?/gm, '');
     const textTitle = sanitize(cleanText).substring(0, 80) + (cleanText.length > 80 ? '...' : '');
     const typeLabel = notifTypeLabel(notif);
+    const courseName = notif.course_id ? courseMap[notif.course_id] : null;
+    const dateLabel = formatNotifDate(notif.created_at);
 
     card.innerHTML = `
       <p class="cp-title">${textTitle}</p>
+      ${courseName ? `<p class="cp-task-date">${sanitize(courseName)}</p>` : ''}
       ${typeLabel ? `<p class="cp-task-date">${sanitize(typeLabel)}</p>` : ''}
+      ${dateLabel ? `<p class="cp-task-date">${sanitize(dateLabel)}</p>` : ''}
     `;
+
     if (notif.html_url && isSafeCanvasUrl(notif.html_url)) {
       const linkP = document.createElement('p');
       linkP.className = 'cp-task-link';
@@ -491,6 +645,29 @@ function renderNotificationsSection(notifications) {
       card.appendChild(linkP);
     }
 
+    const courseKey = notif.course_id ? String(notif.course_id) : '__global__';
+    const dismissRow = document.createElement('div');
+    dismissRow.className = 'vtask-actions-row';
+    const dismissBtn = document.createElement('button');
+    dismissBtn.className = 'vtask-delete-btn';
+    dismissBtn.textContent = 'Mark as Read';
+    dismissBtn.addEventListener('click', async () => {
+      const hash = notifHash(notif);
+      const currentDismissed = (context.dismissedNotifications || {})[courseKey] || [];
+      const updatedDismissed = {
+        ...context.dismissedNotifications,
+        [courseKey]: [...currentDismissed, hash]
+      };
+      Object.assign(context, { dismissedNotifications: updatedDismissed });
+      await saveDismissedNotifications(updatedDismissed);
+      card.remove();
+      if (container.querySelectorAll('.cp-topic-card').length === 0) {
+        container.innerHTML = '<p class="cp-task-date" style="padding:4px 0;">No recent notifications.</p>';
+      }
+    });
+
+    dismissRow.appendChild(dismissBtn);
+    card.appendChild(dismissRow);
     container.appendChild(card);
   });
 }
@@ -498,8 +675,8 @@ function renderNotificationsSection(notifications) {
 // 6. Course Detail Sub-Render Functions -------
 
 function renderDetailTasks(course, context, container) {
-  const canvasTasks = filterCanvasItems(rawCanvasTasks, weekOffset);
-  const { shadowTasks, taskPriorities } = context;
+  const { shadowTasks, taskPriorities, customDueDates = {} } = context;
+  const canvasTasks = filterCanvasItems(rawCanvasTasks, weekOffset, customDueDates);
   const section = document.createElement('div');
   section.className = 'cp-section';
 
@@ -515,7 +692,11 @@ function renderDetailTasks(course, context, container) {
   });
 
   const allTasks = sortTasks([
-    ...canvasTasks.map(normalizeCanvasItem),
+    ...canvasTasks.map(item => {
+      const normalized = normalizeCanvasItem(item);
+      const customDue = customDueDates[normalized.id];
+      return customDue ? { ...normalized, dueAt: customDue, isCustomDue: true } : normalized;
+    }),
     ...filteredShadow
   ], taskPriorities);
 
@@ -533,12 +714,15 @@ function renderDetailTasks(course, context, container) {
     filtered.forEach(task => {
       section.appendChild(buildTaskCard(
         task, taskPriorities, canvasTasks, shadowTasks,
-        (updShadow, updPriorities) => {
+        (updShadow, updPriorities, updCustomDueDates) => {
           context.taskPriorities = updPriorities;
           context.shadowTasks = updShadow;
-          renderTodoSection(filterCanvasItems(rawCanvasTasks, weekOffset), updShadow, updPriorities);
+          context.customDueDates = updCustomDueDates;
+          const refiltered = filterCanvasItems(rawCanvasTasks, weekOffset, updCustomDueDates);
+          renderTodoSection(refiltered, updShadow, updPriorities, updCustomDueDates);
           openCourseDetail(course, context);
-        }
+        },
+        customDueDates
       ));
     });
   }
@@ -617,9 +801,11 @@ function renderDetailNotifications(course, context, container) {
       const textTitle = sanitize(cleanText).substring(0, 80) + (cleanText.length > 80 ? '...' : '');
 
       const typeLabel = notifTypeLabel(notif);
+      const dateLabel = formatNotifDate(notif.created_at);
       card.innerHTML = `
         <p class="cp-title">${textTitle}</p>
         ${typeLabel ? `<p class="cp-task-date">${sanitize(typeLabel)}</p>` : ''}
+        ${dateLabel ? `<p class="cp-task-date">${sanitize(dateLabel)}</p>` : ''}
       `;
       if (notif.html_url && isSafeCanvasUrl(notif.html_url)) {
         const linkP = document.createElement('p');
@@ -643,7 +829,7 @@ function renderDetailNotifications(course, context, container) {
           ...context.dismissedNotifications,
           [courseKey]: [...currentDismissed, hash]
         };
-        context.dismissedNotifications = updatedDismissed;
+        Object.assign(context, { dismissedNotifications: updatedDismissed });
         await saveDismissedNotifications(updatedDismissed);
         card.remove();
         if (list.querySelectorAll('.cp-topic-card').length === 0) {
@@ -1094,10 +1280,10 @@ async function initVersatile() {
 
     const {
       shadowTasks, taskPriorities, sidebarCollapsed, sortMode: savedSortMode,
-      courseNotes, dismissedNotifications, courseLinks
+      courseNotes, dismissedNotifications, courseLinks, customDueDates
     } = storageData;
     rawCanvasTasks = rawItems || [];
-    let canvasTasks = filterCanvasItems(rawCanvasTasks, weekOffset);
+    let canvasTasks = filterCanvasItems(rawCanvasTasks, weekOffset, customDueDates);
 
     if (rawItems && rawItems.length > 0 && canvasTasks.length === 0) {
       console.warn(`[Versatile] Canvas returned ${rawItems.length} item(s) but 0 passed the week filter — all may be outside this week's range or already submitted.`);
@@ -1112,13 +1298,14 @@ async function initVersatile() {
       courseNotes,
       dismissedNotifications,
       courseLinks,
-      courses
+      courses,
+      customDueDates
     };
 
     renderTopicsSection(courses, context);
     initCourseDropdown(courses);
 
-    renderNotificationsSection(notifications);
+    renderNotificationsSection(notifications, context);
 
     sortMode = savedSortMode;
 
@@ -1135,8 +1322,8 @@ async function initVersatile() {
       chrome.storage.local.set({ sortMode });
       updateSortBtn();
       const latestStorage = await loadStorage();
-      const currentCanvasTasks = filterCanvasItems(rawCanvasTasks, weekOffset);
-      renderTodoSection(currentCanvasTasks, latestStorage.shadowTasks, latestStorage.taskPriorities);
+      const currentCanvasTasks = filterCanvasItems(rawCanvasTasks, weekOffset, latestStorage.customDueDates);
+      renderTodoSection(currentCanvasTasks, latestStorage.shadowTasks, latestStorage.taskPriorities, latestStorage.customDueDates);
     });
 
     // Week navigation
@@ -1149,24 +1336,24 @@ async function initVersatile() {
     document.getElementById('vtask-week-prev').addEventListener('click', async () => {
       weekOffset--;
       updateWeekNav();
-      canvasTasks = filterCanvasItems(rawCanvasTasks, weekOffset);
       const latest = await loadStorage();
-      renderTodoSection(canvasTasks, latest.shadowTasks, latest.taskPriorities);
+      canvasTasks = filterCanvasItems(rawCanvasTasks, weekOffset, latest.customDueDates);
+      renderTodoSection(canvasTasks, latest.shadowTasks, latest.taskPriorities, latest.customDueDates);
     });
 
     document.getElementById('vtask-week-next').addEventListener('click', async () => {
       weekOffset++;
       updateWeekNav();
-      canvasTasks = filterCanvasItems(rawCanvasTasks, weekOffset);
       const latest = await loadStorage();
-      renderTodoSection(canvasTasks, latest.shadowTasks, latest.taskPriorities);
+      canvasTasks = filterCanvasItems(rawCanvasTasks, weekOffset, latest.customDueDates);
+      renderTodoSection(canvasTasks, latest.shadowTasks, latest.taskPriorities, latest.customDueDates);
     });
 
     document.getElementById('vtask-submit').addEventListener('click', () => {
       handleAddTask(canvasTasks);
     });
 
-    renderTodoSection(canvasTasks, shadowTasks, taskPriorities);
+    renderTodoSection(canvasTasks, shadowTasks, taskPriorities, customDueDates);
 
     initUrlWatcher(context);
 

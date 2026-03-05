@@ -114,7 +114,20 @@ body:not(.versatile-hidden) #right-side {
 .vtask-actions-row {
     display: flex;
     justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 4px;
     margin-top: 6px;
+}
+
+.vtask-due-edit-input {
+    flex: 1 1 100%;
+    font-size: 0.72rem;
+    padding: 2px 4px;
+    border: 1px solid #c7cdd1;
+    border-radius: 3px;
+    color: #2d3b45;
+    background: #ffffff;
+    margin-bottom: 2px;
 }
 
 .vtask-delete-btn {
