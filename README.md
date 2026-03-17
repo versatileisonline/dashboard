@@ -19,3 +19,4 @@ If the sidebar does not appear:
 
 ###### Creators
 Bryan Torres (bryantorres), Caiden Romero (caidenromero), Garrett Wright (garrettw02), Aneesh Tummeti (artummeti)
+Forked by Tyler Arb (wtylerarb), Dawson Smedt (dtsmedt), Will Tolley (wmtolley), and Deepika Reddy (deepikar)
