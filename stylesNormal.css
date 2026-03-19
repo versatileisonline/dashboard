@@ -11,8 +11,8 @@ body:not(.versatile-hidden) #right-side {
     right: 0;
     width: 350px;
     height: 100vh;
-    background-color: #230a3c;
-    border-left: 2px solid #2c1445;
+    background-color: #f5f5f5;
+    border-left: 2px solid #c7cdd1;
     z-index: 9999;
     padding: 15px;
     box-sizing: border-box;
@@ -28,7 +28,7 @@ body:not(.versatile-hidden) #right-side {
     font-size: 0.95rem;
     font-weight: bold;
     margin-bottom: 6px;
-    color: #6091b3;
+    color: #2d3b45;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -39,8 +39,8 @@ body:not(.versatile-hidden) #right-side {
 
 /* Task Cards (To-Do) */
 .cp-task-card {
-    background-color: #3d2358;
-    border: 1px solid #2c1445;
+    background-color: #ffffff;
+    border: 1px solid #c7cdd1;
     border-radius: 4px;
     padding: 8px 10px;
     margin-bottom: 6px;
@@ -69,8 +69,8 @@ body:not(.versatile-hidden) #right-side {
 
 /* Topic Cards (Topics) */
 .cp-topic-card {
-    background-color: #3d2358;
-    border: 1px solid #2c1445;
+    background-color: #ffffff;
+    border: 1px solid #c7cdd1;
     border-radius: 4px;
     padding: 8px 10px;
     margin-bottom: 6px;
@@ -81,12 +81,12 @@ body:not(.versatile-hidden) #right-side {
     font-weight: bold;
     font-size: 0.85rem;
     margin: 0 0 3px 0;
-    color: #6091b3;
+    color: #2d3b45;
 }
 
 .cp-task-date {
     font-size: 0.75rem;
-    color: #9fc0db;
+    color: #556572;
     margin: 0;
 }
 
@@ -123,26 +123,26 @@ body:not(.versatile-hidden) #right-side {
     flex: 1 1 100%;
     font-size: 0.72rem;
     padding: 2px 4px;
-    border: 1px solid #2c1445;
+    border: 1px solid #c7cdd1;
     border-radius: 3px;
-    color: #6091b3;
-    background: #3d2358;
+    color: #2d3b45;
+    background: #ffffff;
     margin-bottom: 2px;
 }
 
 .vtask-delete-btn {
     background: none;
-    border: 1px solid #2c1445;
+    border: 1px solid #c7cdd1;
     border-radius: 3px;
-    color: #9fc0db;
+    color: #556572;
     font-size: 0.72rem;
     cursor: pointer;
     padding: 2px 8px;
 }
 
 .vtask-delete-btn:hover {
-    background: #5e247b;
-    border-color: #5f3a72;
+    background: #f7f7f7;
+    border-color: #9ca8b2;
 }
 
 .vtask-dot {
@@ -162,7 +162,7 @@ body:not(.versatile-hidden) #right-side {
 
 .vtask-dot-active {
     opacity: 1;
-    box-shadow: 0 0 0 2px #3d2358, 0 0 0 4px #9fc0db;
+    box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #556572;
 }
 
 .vtask-dot-low {
@@ -184,7 +184,7 @@ body:not(.versatile-hidden) #right-side {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.4px;
-    color: #9fc0db;
+    color: #556572;
     background-color: #e8ecef;
     border-radius: 3px;
     padding: 1px 4px;
@@ -207,13 +207,13 @@ body:not(.versatile-hidden) #right-side {
 }
 
 #versatile-add-task-btn:hover {
-    background-color: #5e247b;
+    background-color: #e8f4fb;
 }
 
 /* Add Task inline form */
 #versatile-add-task-form {
-    background: #3d2358;
-    border: 1px solid #2c1445;
+    background: #ffffff;
+    border: 1px solid #c7cdd1;
     border-radius: 4px;
     padding: 10px;
     margin-top: 6px;
@@ -224,11 +224,9 @@ body:not(.versatile-hidden) #right-side {
 
 #versatile-add-task-form input,
 #versatile-add-task-form textarea {
-    color: #9fc0db;
-    background-color: #5f3a72;
     width: 100%;
     box-sizing: border-box;
-    border: 1px solid #2c1445;
+    border: 1px solid #c7cdd1;
     border-radius: 3px;
     padding: 5px 7px;
     font-size: 0.8rem;
@@ -248,7 +246,7 @@ body:not(.versatile-hidden) #right-side {
 
 #vtask-submit {
     background-color: #0770a3;
-    color: #3d2358;
+    color: #ffffff;
     border: none;
     border-radius: 3px;
     padding: 4px 12px;
@@ -258,12 +256,12 @@ body:not(.versatile-hidden) #right-side {
 
 #vtask-cancel {
     background: none;
-    border: 1px solid #2c1445;
+    border: 1px solid #c7cdd1;
     border-radius: 3px;
     padding: 4px 10px;
     font-size: 0.8rem;
     cursor: pointer;
-    color: #9fc0db;
+    color: #556572;
 }
 
 /* Week navigation row */
@@ -279,7 +277,7 @@ body:not(.versatile-hidden) #right-side {
     background: none;
     border: none;
     cursor: pointer;
-    color: #9fc0db;
+    color: #556572;
     font-size: 0.65rem;
     padding: 4px 6px;
     border-radius: 4px;
@@ -288,13 +286,13 @@ body:not(.versatile-hidden) #right-side {
 }
 
 .vtask-week-nav button:hover {
-    background-color: #5e247b;
-    color: #6091b3;
+    background-color: #e8f0f5;
+    color: #2d3b45;
 }
 
 #vtask-week-label {
     font-size: 0.75rem;
-    color: #9fc0db;
+    color: #556572;
     text-align: center;
     flex: 1;
 }
@@ -316,23 +314,23 @@ body:not(.versatile-hidden) #right-side {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.4px;
-    color: #9fc0db;
+    color: #556572;
     background: none;
-    border: 1px solid #2c1445;
+    border: 1px solid #c7cdd1;
     border-radius: 3px;
     padding: 2px 7px;
     cursor: pointer;
 }
 
 #versatile-sort-btn:hover {
-    background-color: #5e247b;
-    color: #6091b3;
+    background-color: #e0e6e9;
+    color: #2d3b45;
 }
 
 #versatile-sort-btn.vtask-sort-active {
-    background-color: #6091b3;
-    color: #3d2358;
-    border-color: #6091b3;
+    background-color: #2d3b45;
+    color: #ffffff;
+    border-color: #2d3b45;
 }
 
 /* Sidebar header row */
@@ -351,7 +349,7 @@ body:not(.versatile-hidden) #right-side {
     padding-bottom: 0;
     margin-bottom: 0;
     font-size: 1.1rem;
-    color: #6091b3;
+    color: #2d3b45;
 }
 
 /* Collapse button inside the sidebar header */
@@ -359,7 +357,7 @@ body:not(.versatile-hidden) #right-side {
     background: none;
     border: none;
     cursor: pointer;
-    color: #9fc0db;
+    color: #556572;
     font-size: 1rem;
     line-height: 1;
     padding: 2px 4px;
@@ -369,8 +367,8 @@ body:not(.versatile-hidden) #right-side {
 }
 
 #versatile-collapse-btn:hover {
-    background-color: #5e247b;
-    color: #6091b3;
+    background-color: #e0e6e9;
+    color: #2d3b45;
 }
 
 /* Floating action button (shown when sidebar is hidden) */
@@ -381,7 +379,7 @@ body:not(.versatile-hidden) #right-side {
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background-color: #6091b3;
+    background-color: #2d3b45;
     border: none;
     cursor: pointer;
     z-index: 9999;
@@ -414,7 +412,7 @@ body:not(.versatile-hidden) #right-side {
 }
 
 .cp-topic-card--clickable:hover {
-    background-color: #5e247b;
+    background-color: #e8f4fb;
     border-color: #0770a3;
 }
 
@@ -430,7 +428,7 @@ body:not(.versatile-hidden) #right-side {
 
 .cp-back-btn {
     background: none;
-    border: 1px solid #2c1445;
+    border: 1px solid #c7cdd1;
     border-radius: 3px;
     padding: 3px 8px;
     font-size: 0.85rem;
@@ -441,14 +439,14 @@ body:not(.versatile-hidden) #right-side {
 }
 
 .cp-back-btn:hover {
-    background-color: #5e247b;
+    background-color: #e8f4fb;
     border-color: #0770a3;
 }
 
 .cp-detail-course-name {
     font-size: 0.85rem;
     font-weight: bold;
-    color: #6091b3;
+    color: #2d3b45;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -456,11 +454,9 @@ body:not(.versatile-hidden) #right-side {
 
 /* Course notes textarea */
 .cp-notes-textarea {
-    color: #9fc0db;
-    background-color: #5f3a72;
     width: 100%;
     box-sizing: border-box;
-    border: 1px solid #2c1445;
+    border: 1px solid #c7cdd1;
     border-radius: 3px;
     padding: 6px 8px;
     font-size: 0.8rem;
@@ -477,7 +473,7 @@ body:not(.versatile-hidden) #right-side {
 
 .cp-notes-status {
     font-size: 0.7rem;
-    color: #9fc0db;
+    color: #556572;
     margin: 3px 0 0 0;
     min-height: 1em;
 }
@@ -497,13 +493,13 @@ body:not(.versatile-hidden) #right-side {
 }
 
 .cp-add-link-btn:hover {
-    background-color: #5e247b;
+    background-color: #e8f4fb;
 }
 
 /* Add link inline form */
 .cp-add-link-form {
-    background: #3d2358;
-    border: 1px solid #2c1445;
+    background: #ffffff;
+    border: 1px solid #c7cdd1;
     border-radius: 4px;
     padding: 10px;
     margin-top: 6px;
@@ -514,7 +510,7 @@ body:not(.versatile-hidden) #right-side {
 .cp-add-link-form input {
     width: 100%;
     box-sizing: border-box;
-    border: 1px solid #2c1445;
+    border: 1px solid #c7cdd1;
     border-radius: 3px;
     padding: 5px 7px;
     font-size: 0.8rem;
@@ -523,7 +519,7 @@ body:not(.versatile-hidden) #right-side {
 
 .cp-link-save-btn {
     background-color: #0770a3;
-    color: #3d2358;
+    color: #ffffff;
     border: none;
     border-radius: 3px;
     padding: 4px 12px;
@@ -538,7 +534,6 @@ body:not(.versatile-hidden) #right-side {
 }
 
 .cp-canvas-link:hover {
-    color: #84a9c7;
     text-decoration: underline;
 }
 
@@ -570,8 +565,8 @@ body:not(.versatile-hidden) #right-side {
     top: 100%;
     left: 0;
     right: 0;
-    background: #3d2358;
-    border: 1px solid #2c1445;
+    background: #ffffff;
+    border: 1px solid #c7cdd1;
     border-top: none;
     border-radius: 0 0 4px 4px;
     max-height: 160px;
@@ -584,16 +579,9 @@ body:not(.versatile-hidden) #right-side {
     padding: 7px 10px;
     font-size: 0.82rem;
     cursor: pointer;
-    color: #6091b3;
+    color: #2d3b45;
 }
 
 .vtask-course-option:hover {
     background-color: #e8f0f5;
-}
-
-textarea, 
-input[type="text"], 
-.uneditable-input {
-    color: #9fc0db !important;
-    background-color: #5f3a72 !important;
 }
