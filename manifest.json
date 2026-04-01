@@ -23,7 +23,18 @@
         "*://*.instructure.com/*"
       ],
       "css": ["styles.css"],
-      "js": ["content.js"]
+      "js": [
+        "storage.js",
+        "dateUtils.js",
+        "utils.js",
+        "canvasApi.js",
+        "notifications.js",
+        "tasks.js",
+        "taskHandlers.js",
+        "courseDetail.js",
+        "sidebar.js",
+        "init.js"
+      ]
     }
   ]
 }
