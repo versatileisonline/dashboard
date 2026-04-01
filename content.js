@@ -1,5 +1,10 @@
 // 1. Storage Helper Functions ---------
 
+
+/**
+ * An asynchronous function that loads relevant keys from Chrome's LocalStorage and copies to relevant variables.
+ * @returns a Promise once completed whose resolve represents the data retrieved from storage.
+ */
 function loadStorage() {
   return new Promise(resolve => {
     chrome.storage.local.get(
@@ -21,6 +26,12 @@ function loadStorage() {
   });
 }
 
+/**
+ * An asynchronous function that saves shadowTasks and taskPriorities to Chrome's LocalStorage.
+ * @param {*} shadowTasks 
+ * @param {*} taskPriorities 
+ * @returns a Promise that returns a resolve if a successful save has taken place and throws an error if it fails.
+ */
 function saveStorage(shadowTasks, taskPriorities) {
   return new Promise((resolve, reject) => {
     chrome.storage.local.set({ shadowTasks, taskPriorities }, () => {
@@ -34,6 +45,11 @@ function saveStorage(shadowTasks, taskPriorities) {
   });
 }
 
+/**
+ * An asynchronous function that saves course notes to Chrome's LocalStorage.
+ * @param {*} courseNotes 
+ * @returns a Promise that returns a resolve if a successful save has taken place and throws an error if it fails.
+ */
 function saveCourseNotes(courseNotes) {
   return new Promise((resolve, reject) => {
     chrome.storage.local.set({ courseNotes }, () => {
@@ -47,6 +63,11 @@ function saveCourseNotes(courseNotes) {
   });
 }
 
+/**
+ * An asynchronous function that saves dismissed notifications to Chrome's LocalStorage.
+ * @param {*} dismissedNotifications 
+ * @returns a Promise that returns a resolve if a successful save has taken place and throws an error if it fails.
+ */
 function saveDismissedNotifications(dismissedNotifications) {
   return new Promise((resolve, reject) => {
     chrome.storage.local.set({ dismissedNotifications }, () => {
@@ -60,6 +81,11 @@ function saveDismissedNotifications(dismissedNotifications) {
   });
 }
 
+/**
+ * An asynchronous function that saves custom due dates to Chrome's LocalStorage.
+ * @param {*} customDueDates 
+ * @returns a Promise that returns a resolve if a successful save has taken place and throws an error if it fails.
+ */
 function saveCustomDueDates(customDueDates) {
   return new Promise((resolve, reject) => {
     chrome.storage.local.set({ customDueDates }, () => {
@@ -73,6 +99,11 @@ function saveCustomDueDates(customDueDates) {
   });
 }
 
+/**
+ * An asynchronous function that saves course links to Chrome's LocalStorage.
+ * @param {*} courseLinks 
+ * @returns a Promise that returns a resolve if a successful save has taken place and throws an error if it fails.
+ */
 function saveCourseLinks(courseLinks) {
   return new Promise((resolve, reject) => {
     chrome.storage.local.set({ courseLinks }, () => {
@@ -89,6 +120,11 @@ function saveCourseLinks(courseLinks) {
 
 // 2. Date/formating helpers ----------
 
+/**
+ * Creates an object that represents a week, from Sunday at midnight to Saturday at 23:59:59. Defaults to the current week.
+ * @param {*} offset an optional parameter to get bounds for n weeks from now.
+ * @returns an object with Start and End keys representing the bounds of the week as Day objects.
+ */
 function getWeekBounds(offset = 0) {
   const now = new Date();
   const start = new Date(now);
@@ -100,6 +136,11 @@ function getWeekBounds(offset = 0) {
   return { start, end };
 }
 
+/**
+ * Creates text representing a week's days. Example: Mar 29 - Apr 4
+ * @param {*} offset an optional parameter to get a formatted label for a week n weeks from now.
+ * @returns a string representing the desired week's date range.
+ */
 function formatWeekLabel(offset = 0) {
   const { start, end } = getWeekBounds(offset);
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -107,6 +148,11 @@ function formatWeekLabel(offset = 0) {
   return `${fmt(start)} – ${fmt(end)}`;
 }
 
+/**
+ * Creates text representing an assignment's due date and time. Example: Wed Apr 1 at 11:59 PM
+ * @param {*} isoString the ISO-formatted string to parse.
+ * @returns a cleaner string representation of an assignment's due date and time.
+ */
 function formatDueDate(isoString) {
   const d = new Date(isoString);
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -118,6 +164,11 @@ function formatDueDate(isoString) {
   return `Due: ${days[d.getDay()]} ${months[d.getMonth()]} ${d.getDate()} at ${hours}:${minutes} ${ampm}`;
 }
 
+/**
+ * Translates a due date to local time.
+ * @param {*} isoString the ISO-formatted string to parse.
+ * @returns A string representing a due date and time in local time.
+ */
 function toDatetimeLocalValue(isoString) {
   if (!isoString) return '';
   const d = new Date(isoString);
@@ -136,6 +187,12 @@ function formatNotifDate(isoString) {
 
 // 3. Misc Utilities ----------
 
+/**
+ * Debounce function. Causes an API call to not fire until no other Debounce functions have been called for some time.
+ * @param {} fn the function to debounce.
+ * @param {*} ms the delay, in milliseconds, to wait.
+ * @returns a function that is called on a delay.
+ */
 function debounce(fn, ms) {
   let timer;
   return (...args) => {
