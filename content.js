@@ -126,13 +126,20 @@ function saveCourseLinks(courseLinks) {
  * @returns an object with Start and End keys representing the bounds of the week as Day objects.
  */
 function getWeekBounds(offset = 0) {
+
+  // Gets current date and time.
   const now = new Date();
   const start = new Date(now);
+
+  // Sets 'start' to the beginning of the week at midnight, and offsets the weeks.
   start.setDate(now.getDate() - now.getDay() + offset * 7);
   start.setHours(0, 0, 0, 0);
+
+  // Sets 'end' to the end of the week that 'start' begins.
   const end = new Date(start);
   end.setDate(start.getDate() + 6);
   end.setHours(23, 59, 59, 999);
+
   return { start, end };
 }
 
@@ -142,9 +149,15 @@ function getWeekBounds(offset = 0) {
  * @returns a string representing the desired week's date range.
  */
 function formatWeekLabel(offset = 0) {
+
+  // Calls getWeekBounds helper function to get the current week.
   const { start, end } = getWeekBounds(offset);
+
+  // Declares a format function using an array of months to turn a Date object into a string.
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const fmt = d => `${months[d.getMonth()]} ${d.getDate()}`;
+
+  // Uses 'fmt' function to create a date range string.
   return `${fmt(start)} – ${fmt(end)}`;
 }
 
@@ -154,13 +167,22 @@ function formatWeekLabel(offset = 0) {
  * @returns a cleaner string representation of an assignment's due date and time.
  */
 function formatDueDate(isoString) {
+
+  // Translates ISO string to a Date object.
   const d = new Date(isoString);
+
+  // Uses values of the Date object to populate variables to build the string.
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   let hours = d.getHours();
   const minutes = d.getMinutes().toString().padStart(2, '0');
+
+  // 24-hour format to 12-hour format.
+  // TODO: Maybe add an option to display in 24 hour format?
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12 || 12;
+
+
   return `Due: ${days[d.getDay()]} ${months[d.getMonth()]} ${d.getDate()} at ${hours}:${minutes} ${ampm}`;
 }
 
@@ -188,7 +210,7 @@ function formatNotifDate(isoString) {
 // 3. Misc Utilities ----------
 
 /**
- * Debounce function. Causes an API call to not fire until no other Debounce functions have been called for some time.
+ * Debounce function. Causes an function to not fire until no other Debounce functions have been called for some time.
  * @param {} fn the function to debounce.
  * @param {*} ms the delay, in milliseconds, to wait.
  * @returns a function that is called on a delay.
@@ -201,6 +223,11 @@ function debounce(fn, ms) {
   };
 }
 
+/**
+ * Parses the course ID from a Canvas URL.
+ * @param {*} pathname the path to the Canvas page for a class.
+ * @returns a Number representing the course's ID.
+ */
 function getCourseIdFromUrl(pathname) {
   const match = pathname.match(/\/courses\/(\d+)/);
   return match ? Number(match[1]) : null;
