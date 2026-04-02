@@ -33,9 +33,11 @@ test('Format Week Label', () => {
  */
 test('Due Date Formatting', () => {
     const isostring = "2026-04-02T18:19:38.000Z"
+    const isostringAm = "2026-04-02T04:25:44.000Z"
 
     // This test depends on being ran in Eastern Daylight Time.
     expect(formatDueDate(isostring)).toBe("Due: Thu Apr 2 at 2:19 PM")
+    expect(formatDueDate(isostringAm)).toBe("Due: Thu Apr 2 at 12:25 AM")
 })
 
 /**
@@ -47,6 +49,7 @@ test('Date Time Local Value', () => {
     
     // Invalid input should return an empty string.
     expect(toDatetimeLocalValue(null)).toBe('')
+    expect(toDatetimeLocalValue("THIS IS A VERY BAD STRING")).toBe('')
 
     // This test depends on being ran in Eastern Daylight Time.
     expect(toDatetimeLocalValue(isostring)).toBe("2026-04-02T14:19")
@@ -60,6 +63,7 @@ test('Notification Date Formatting', () => {
 
     // Invalid input should return null.
     expect(formatNotifDate(null)).toBeNull()
+    expect(formatNotifDate("THIS SHOULD NOT WORK")).toBeNull()
 
     // This test depends on being ran in Eastern Daylight Time.
     expect(formatNotifDate(isostring)).toBe("Apr 2, 2026")
