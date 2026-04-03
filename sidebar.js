@@ -41,7 +41,14 @@ function initSidebar(collapsed = false) {
   sidebar.innerHTML = `
     <div id="versatile-header">
       <h2>Canvas+</h2>
-      <button id="versatile-collapse-btn" title="Hide sidebar">&#x2715;</button>
+      <div class="versatile-header-actions">
+        <button id="theme-toggle-btn" title="Toggle light/dark mode" aria-label="Toggle light and dark mode">
+          <span class="theme-toggle-track">
+            <span class="theme-toggle-thumb"></span>
+          </span>
+        </button>
+        <button id="versatile-collapse-btn" title="Hide sidebar">&#x2715;</button>
+      </div>
     </div>
 
     <div id="versatile-main-view">

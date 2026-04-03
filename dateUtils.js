@@ -77,4 +77,12 @@ function formatNotifDate(isoString) {
   return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
-module.exports = {formatWeekLabel, getWeekBounds, formatDueDate, toDatetimeLocalValue, formatNotifDate};
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    formatWeekLabel,
+    getWeekBounds,
+    formatDueDate,
+    toDatetimeLocalValue,
+    formatNotifDate
+  };
+}

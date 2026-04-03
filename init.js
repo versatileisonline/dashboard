@@ -44,7 +44,7 @@ async function initVersatile() {
 
     const {
       shadowTasks, taskPriorities, sidebarCollapsed, sortMode: savedSortMode,
-      courseNotes, dismissedNotifications, courseLinks, customDueDates
+      courseNotes, dismissedNotifications, courseLinks, customDueDates, theme
     } = storageData;
     rawCanvasTasks = rawItems || [];
     let canvasTasks = filterCanvasItems(rawCanvasTasks, weekOffset, customDueDates);
@@ -63,13 +63,41 @@ async function initVersatile() {
       dismissedNotifications,
       courseLinks,
       courses,
-      customDueDates
+      customDueDates,
+      theme
     };
 
     renderTopicsSection(courses, context);
     initCourseDropdown(courses);
 
     renderNotificationsSection(notifications, context);
+
+    // Light/Dark mode button toggle
+    function applyTheme(theme) {
+      const isDark = theme === 'dark';
+      document.body.classList.toggle('dark-mode', isDark);
+
+      const btn = document.getElementById('theme-toggle-btn');
+      if (btn) {
+        btn.setAttribute(
+          'title',
+          isDark ? 'Switch to light mode' : 'Switch to dark mode'
+        );
+        btn.setAttribute(
+          'aria-label',
+          isDark ? 'Switch to light mode' : 'Switch to dark mode'
+        );
+        btn.setAttribute('aria-pressed', String(isDark));
+      }
+    }
+
+    applyTheme(theme);
+
+    document.getElementById('theme-toggle-btn').addEventListener('click', async () => {
+      const newTheme = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
+      applyTheme(newTheme);
+      chrome.storage.local.set({ theme: newTheme });
+    });
 
     sortMode = savedSortMode;
 
