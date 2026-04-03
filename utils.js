@@ -71,3 +71,5 @@ function normalizeExternalUrl(rawUrl) {
     return null;
   }
 }
+
+module.exports = {debounce, getCourseIdFromUrl, sanitize, isSafeCanvasUrl, normalizeExternalUrl};

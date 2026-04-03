@@ -2,8 +2,10 @@
   "dependencies": {
     "jest": "^30.3.0"
   },
-
   "scripts": {
     "test": "jest"
+  },
+  "devDependencies": {
+    "jest-environment-jsdom": "^30.3.0"
   }
 }
