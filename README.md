@@ -21,6 +21,7 @@ If the sidebar does not appear:
 1. Ensure `node.js` is installed.
 2. Run `npm install` to install the Jest unit test package.
 3. Run `npm test`.
+Alternatively, run `npm test -- --coverage` for statement and branch coverage.
 
 ###### Creators
 Bryan Torres (bryantorres), Caiden Romero (caidenromero), Garrett Wright (garrettw02), Aneesh Tummeti (artummeti)
