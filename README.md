@@ -1,7 +1,7 @@
 # Canvas+ 
 
 #### Description
-Students often face the issue of a fragmented workflow. While Canvas is the primary Learning Management System (LMS) for Virginia Tech and most other universities, it rarely capture sthe full scope of student's academic responsibilites. 
+Students often face the issue of a fragmented workflow. While Canvas is the primary Learning Management System (LMS) for Virginia Tech and most other universities, it rarely captures the full scope of student's academic responsibilites. 
 
 We purpose Canvas+, a Chromimum-based browser extension that injects a "Course Homepage" interface directly into the existing Canvas Dashboard. Canvas+ will integrate seamlessly into the students' existing workflow without the need to visit another site.
 
