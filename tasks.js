@@ -83,6 +83,7 @@ function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks, refreshCa
   const titleEl = card.querySelector('.cp-title');
   if (task.source === 'canvas' && task.url && isSafeCanvasUrl(task.url)) {
     const anchor = document.createElement('a');
+    anchor.className = "cp-title-name";
     anchor.href = task.url;
     anchor.textContent = task.title;
     titleEl.appendChild(anchor);

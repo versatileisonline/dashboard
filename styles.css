@@ -84,6 +84,13 @@ body:not(.versatile-hidden) #right-side {
     color: #2d3b45;
 }
 
+.cp-title-name {
+    font-weight: bold;
+    font-size: 0.85rem;
+    margin: 0 0 3px 0;
+    color: #2d3b45;
+}
+
 .cp-task-date {
     font-size: 0.75rem;
     color: #556572;
@@ -644,6 +651,10 @@ body.dark-mode .cp-title {
     color: #6091b3;
 }
 
+body.dark-mode .cp-title-name {
+    color: #6091b3;
+}
+
 body.dark-mode .cp-task-date {
     color: #9fc0db;
 }
@@ -791,11 +802,4 @@ body.dark-mode .vtask-course-option {
 
 body.dark-mode .vtask-course-option:hover {
     background-color: #e8f0f5;
-}
-
-body.dark-mode textarea,
-body.dark-mode input[type="text"],
-body.dark-mode .uneditable-input {
-    color: #9fc0db !important;
-    background-color: #5f3a72 !important;
 }
