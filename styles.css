@@ -191,35 +191,29 @@ body:not(.versatile-hidden) #right-side {
 }
 
 .vtask-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: none;
+    background: none;
+    border: 1px solid #c7cdd1;
+    border-radius: 3px;
     cursor: pointer;
-    padding: 0;
-    opacity: 0.4;
-    transition: opacity 0.15s, box-shadow 0.15s;
+    padding: 1px 5px;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: #556572;
+    opacity: 0.45;
+    transition: opacity 0.15s, background-color 0.15s, border-color 0.15s;
 }
 
 .vtask-dot:hover {
-    opacity: 0.75;
+    opacity: 0.8;
+    background-color: #e8ecef;
 }
 
 .vtask-dot-active {
     opacity: 1;
-    box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #556572;
-}
-
-.vtask-dot-low {
-    background-color: #00b050;
-}
-
-.vtask-dot-med {
-    background-color: #ffc000;
-}
-
-.vtask-dot-xtrm {
-    background-color: #ff0000;
+    color: #2d3b45;
+    background-color: #dce3e8;
+    border-color: #9ca8b2;
+    font-weight: 700;
 }
 
 /* Custom task badge */
@@ -676,7 +670,9 @@ body.dark-mode .vtask-delete-btn:hover {
 }
 
 body.dark-mode .vtask-dot-active {
-    box-shadow: 0 0 0 2px #3d2358, 0 0 0 4px #9fc0db;
+    color: #9fc0db;
+    background-color: #5e247b;
+    border-color: #9fc0db;
 }
 
 body.dark-mode .vtask-badge {

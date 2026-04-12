@@ -58,11 +58,13 @@ function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks, refreshCa
 
   const priorityRow = document.createElement('div');
   priorityRow.className = 'vtask-priority-row';
-  ['low', 'med', 'xtrm'].forEach(p => {
+  const ARROW_ICONS = { low: '↓', med: '↑', xtrm: '↑↑' };
+  ['xtrm', 'med', 'low'].forEach(p => {
     const dot = document.createElement('button');
     dot.className = `vtask-dot vtask-dot-${p}${priority === p ? ' vtask-dot-active' : ''}`;
     dot.dataset.priority = p;
     dot.dataset.id = task.id;
+    dot.textContent = ARROW_ICONS[p];
     priorityRow.appendChild(dot);
   });
   card.appendChild(priorityRow);
