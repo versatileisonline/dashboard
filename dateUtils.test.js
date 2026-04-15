@@ -1,70 +1,246 @@
 // Test cases for dateUtils.
 
-const {formatWeekLabel, getWeekBounds, formatDueDate, toDatetimeLocalValue, formatNotifDate} = require('./dateUtils');
+const { formatWeekLabel, getWeekBounds, formatDueDate, toDatetimeLocalValue, formatNotifDate } = require('./dateUtils');
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 /**
- * Tests getting the week. It should always start on midnight on Sunday and end at 11:59:59 PM on Saturday.
+ * Derives what formatDueDate / toDatetimeLocalValue / formatNotifDate should
+ * produce for a given ISO string by interpreting it in the *local* timezone of
+ * whatever environment is running the tests — the same way the source functions
+ * do.  This makes every assertion timezone-agnostic.
  */
-test('Week Bounds', () => {
+function localPartsOf(isoString) {
+  const d = new Date(isoString);
+  const days   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-    const {start, end} = getWeekBounds()
-    
-    // Testing midnight Sunday
-    expect(start.getDay()).toBe(0)
-    expect(start.getHours()).toBe(0)
-    expect(start.getMinutes()).toBe(0)
-    expect(start.getSeconds()).toBe(0)
+  const dayName   = days[d.getDay()];
+  const monthName = months[d.getMonth()];
+  const date      = d.getDate();
+  const year      = d.getFullYear();
 
-    // Testing 23:59:59 Saturday
-    expect(end.getDay()).toBe(6)
-    expect(end.getHours()).toBe(23)
-    expect(end.getMinutes()).toBe(59)
-    expect(end.getSeconds()).toBe(59)
-})
+  let hours   = d.getHours();
+  const mins  = d.getMinutes().toString().padStart(2, '0');
+  const ampm  = hours >= 12 ? 'PM' : 'AM';
+  hours       = hours % 12 || 12;
 
-test('Format Week Label', () => {
-    // This test depends on being ran before Apr 5, 2026.
-    expect(formatWeekLabel()).toBe("Mar 29 – Apr 4");
+  const pad = n => String(n).padStart(2, '0');
+  const localISO = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(date)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+  return { dayName, monthName, date, year, hours, mins, ampm, localISO };
+}
+
+// ---------------------------------------------------------------------------
+// getWeekBounds
+// ---------------------------------------------------------------------------
+
+describe('getWeekBounds', () => {
+  // Pin "now" to a known Tuesday so the week boundaries are deterministic.
+  // 2026-04-07T12:00:00Z is a Tuesday in every timezone.
+  // Pass the numeric epoch value — this version of Jest requires a number, not a Date.
+  const FIXED_NOW_MS = new Date('2026-04-07T12:00:00.000Z').getTime();
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(FIXED_NOW_MS);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  test('start is midnight (00:00:00) on Sunday', () => {
+    const { start } = getWeekBounds();
+    expect(start.getDay()).toBe(0);
+    expect(start.getHours()).toBe(0);
+    expect(start.getMinutes()).toBe(0);
+    expect(start.getSeconds()).toBe(0);
+    expect(start.getMilliseconds()).toBe(0);
+  });
+
+  test('end is 23:59:59.999 on Saturday', () => {
+    const { end } = getWeekBounds();
+    expect(end.getDay()).toBe(6);
+    expect(end.getHours()).toBe(23);
+    expect(end.getMinutes()).toBe(59);
+    expect(end.getSeconds()).toBe(59);
+    expect(end.getMilliseconds()).toBe(999);
+  });
+
+  test('end is exactly 6 days after start', () => {
+    const { start, end } = getWeekBounds();
+    const diffDays = (end - start) / (1000 * 60 * 60 * 24);
+    // 6 days + 23h 59m 59.999s ≈ 6.999... days
+    expect(diffDays).toBeCloseTo(6.9999999, 4);
+  });
+
+  test('offset +1 shifts both bounds forward by 7 days', () => {
+    const { start: s0, end: e0 } = getWeekBounds(0);
+    const { start: s1, end: e1 } = getWeekBounds(1);
+    expect(s1 - s0).toBe(7 * 24 * 60 * 60 * 1000);
+    expect(e1 - e0).toBe(7 * 24 * 60 * 60 * 1000);
+  });
+
+  test('offset -1 shifts both bounds back by 7 days', () => {
+    const { start: s0, end: e0 } = getWeekBounds(0);
+    const { start: sm1, end: em1 } = getWeekBounds(-1);
+    expect(s0 - sm1).toBe(7 * 24 * 60 * 60 * 1000);
+    expect(e0 - em1).toBe(7 * 24 * 60 * 60 * 1000);
+  });
 });
 
-/**
- * Tests translating ISO into the string format used for due dates and times.
- */
-test('Due Date Formatting', () => {
-    const isostring = "2026-04-02T18:19:38.000Z"
-    const isostringAm = "2026-04-02T04:25:44.000Z"
+// ---------------------------------------------------------------------------
+// formatWeekLabel
+// ---------------------------------------------------------------------------
 
-    // This test depends on being ran in Eastern Daylight Time.
-    expect(formatDueDate(isostring)).toBe("Due: Thu Apr 2 at 2:19 PM")
-    expect(formatDueDate(isostringAm)).toBe("Due: Thu Apr 2 at 12:25 AM")
-})
+describe('formatWeekLabel', () => {
+  // Pin to 2026-04-07 (Tuesday).  The week containing that day runs
+  // Sun Apr 5 – Sat Apr 11 in every timezone, because noon UTC is always
+  // the same local calendar day (UTC-12 … UTC+14 all agree on "Apr 7").
+  const FIXED_NOW_MS = new Date('2026-04-07T12:00:00.000Z').getTime();
 
-/**
- * Translates ISO time to local time.
- */
-test('Date Time Local Value', () => {
-    
-    const isostring = "2026-04-02T18:19:38.000Z"
-    
-    // Invalid input should return an empty string.
-    expect(toDatetimeLocalValue(null)).toBe('')
-    expect(toDatetimeLocalValue("THIS IS A VERY BAD STRING")).toBe('')
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(FIXED_NOW_MS);
+  });
 
-    // This test depends on being ran in Eastern Daylight Time.
-    expect(toDatetimeLocalValue(isostring)).toBe("2026-04-02T14:19")
-})
+  afterEach(() => {
+    jest.useRealTimers();
+  });
 
-/**
- * Tests translating ISO into the string format used for notifications.
- */
-test('Notification Date Formatting', () => {
-    const isostring = "2026-04-02T18:19:38.000Z"
+  test('returns the label for the current week (offset 0)', () => {
+    // Compute the expected label the same way the source does so the
+    // assertion stays correct in any timezone.
+    const { start, end } = getWeekBounds(0);
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const fmt = d => `${months[d.getMonth()]} ${d.getDate()}`;
+    const expected = `${fmt(start)} – ${fmt(end)}`;
+    expect(formatWeekLabel()).toBe(expected);
+  });
 
-    // Invalid input should return null.
-    expect(formatNotifDate(null)).toBeNull()
-    expect(formatNotifDate("THIS SHOULD NOT WORK")).toBeNull()
+  test('returns the correct label for offset +1', () => {
+    const { start, end } = getWeekBounds(1);
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const fmt = d => `${months[d.getMonth()]} ${d.getDate()}`;
+    expect(formatWeekLabel(1)).toBe(`${fmt(start)} – ${fmt(end)}`);
+  });
 
-    // This test depends on being ran in Eastern Daylight Time.
-    expect(formatNotifDate(isostring)).toBe("Apr 2, 2026")
-})
+  test('returns the correct label for offset -1', () => {
+    const { start, end } = getWeekBounds(-1);
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const fmt = d => `${months[d.getMonth()]} ${d.getDate()}`;
+    expect(formatWeekLabel(-1)).toBe(`${fmt(start)} – ${fmt(end)}`);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// formatDueDate
+// ---------------------------------------------------------------------------
+
+describe('formatDueDate', () => {
+  // Use UTC noon so the local calendar date is identical in every UTC offset
+  // from UTC-11 through UTC+11 — covering all real CI runner timezones.
+  const ISO_NOON   = '2026-04-02T12:00:00.000Z'; // Thu Apr 2, noon UTC
+  const ISO_NOON_2 = '2026-04-15T12:00:00.000Z'; // Wed Apr 15, noon UTC
+
+  test('formats a PM time correctly', () => {
+    const { dayName, monthName, date, hours, mins, ampm } = localPartsOf(ISO_NOON);
+    const expected = `Due: ${dayName} ${monthName} ${date} at ${hours}:${mins} ${ampm}`;
+    expect(formatDueDate(ISO_NOON)).toBe(expected);
+  });
+
+  test('formats a different date correctly', () => {
+    const { dayName, monthName, date, hours, mins, ampm } = localPartsOf(ISO_NOON_2);
+    const expected = `Due: ${dayName} ${monthName} ${date} at ${hours}:${mins} ${ampm}`;
+    expect(formatDueDate(ISO_NOON_2)).toBe(expected);
+  });
+
+  test('uses 12 instead of 0 for 12-hour display', () => {
+    // UTC midnight is local midnight only in UTC, but the hours value will
+    // always be either 12 (AM) or some local equivalent — just verify the
+    // result never contains "0:00 AM" (which would mean the modulo is wrong).
+    const result = formatDueDate('2026-04-02T00:00:00.000Z');
+    expect(result).not.toMatch(/\b0:/);
+  });
+
+  test('output always starts with "Due: "', () => {
+    expect(formatDueDate(ISO_NOON)).toMatch(/^Due: /);
+  });
+
+  test('output always contains AM or PM', () => {
+    expect(formatDueDate(ISO_NOON)).toMatch(/AM|PM/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// toDatetimeLocalValue
+// ---------------------------------------------------------------------------
+
+describe('toDatetimeLocalValue', () => {
+  const ISO_NOON = '2026-04-02T12:00:00.000Z';
+
+  test('returns empty string for null', () => {
+    expect(toDatetimeLocalValue(null)).toBe('');
+  });
+
+  test('returns empty string for undefined', () => {
+    expect(toDatetimeLocalValue(undefined)).toBe('');
+  });
+
+  test('returns empty string for an invalid date string', () => {
+    expect(toDatetimeLocalValue('THIS IS A VERY BAD STRING')).toBe('');
+  });
+
+  test('returns empty string for empty string', () => {
+    expect(toDatetimeLocalValue('')).toBe('');
+  });
+
+  test('returns a valid datetime-local string (YYYY-MM-DDTHH:MM) for a valid ISO input', () => {
+    const result = toDatetimeLocalValue(ISO_NOON);
+    // Must match the datetime-local input format exactly
+    expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+  });
+
+  test('local date and time components match new Date() parsed in local time', () => {
+    const { localISO } = localPartsOf(ISO_NOON);
+    expect(toDatetimeLocalValue(ISO_NOON)).toBe(localISO);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// formatNotifDate
+// ---------------------------------------------------------------------------
+
+describe('formatNotifDate', () => {
+  const ISO_NOON = '2026-04-02T12:00:00.000Z'; // Thu Apr 2
+
+  test('returns null for null input', () => {
+    expect(formatNotifDate(null)).toBeNull();
+  });
+
+  test('returns null for undefined input', () => {
+    expect(formatNotifDate(undefined)).toBeNull();
+  });
+
+  test('returns null for an invalid date string', () => {
+    expect(formatNotifDate('THIS SHOULD NOT WORK')).toBeNull();
+  });
+
+  test('returns null for empty string', () => {
+    expect(formatNotifDate('')).toBeNull();
+  });
+
+  test('formats a valid ISO string as "Mon D, YYYY"', () => {
+    const { monthName, date, year } = localPartsOf(ISO_NOON);
+    expect(formatNotifDate(ISO_NOON)).toBe(`${monthName} ${date}, ${year}`);
+  });
+
+  test('output matches the Mon D, YYYY pattern', () => {
+    const result = formatNotifDate(ISO_NOON);
+    expect(result).toMatch(/^[A-Z][a-z]{2} \d{1,2}, \d{4}$/);
+  });
+});
