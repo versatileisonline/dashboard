@@ -28,6 +28,23 @@ jobs:
       - name: Run tests
         run: npm test -- --ci --reporters=default
 
+      - name: Notify Mattermost - Tests
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          EMOJI="✅"
+          if [ "$STATUS" != "success" ]; then EMOJI="❌"; fi
+
+          curl -s -X POST "${{ secrets.MATTERMOST_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"text\": \"$EMOJI **Unit Tests $STATUS** on \`${{ github.ref_name }}\`\n
+              **Commit:** ${{ github.sha }}\n
+              **Message:** ${{ github.event.head_commit.message }}\n
+              **Author:** ${{ github.actor }}\n
+              **Run:** [View Details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\"
+            }"
+
   # --- Code coverage --------------------------------------------------
   coverage:
     name: Code Coverage
@@ -56,3 +73,20 @@ jobs:
           name: coverage-report
           path: coverage/
           retention-days: 14
+
+      - name: Notify Mattermost - Coverage
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          EMOJI="📊"
+          if [ "$STATUS" != "success" ]; then EMOJI="❌"; fi
+
+          curl -s -X POST "${{ secrets.MATTERMOST_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"text\": \"$EMOJI **Coverage Report $STATUS** on \`${{ github.ref_name }}\`\n
+              **Commit:** ${{ github.sha }}\n
+              **Message:** ${{ github.event.head_commit.message }}\n
+              **Author:** ${{ github.actor }}\n
+              **Run:** [View Details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\"
+            }"
