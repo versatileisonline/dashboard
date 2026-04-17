@@ -40,7 +40,7 @@ jobs:
             -d "{
               \"text\": \"$EMOJI **Unit Tests $STATUS** on \`${{ github.ref_name }}\`\n
               **Commit:** ${{ github.sha }}\n
-              **Message:** ${{ github.event.head_commit.message }}\n
+              **Title:** ${{ github.event.pull_request.title || github.event.head_commit.message }}\n
               **Author:** ${{ github.actor }}\n
               **Run:** [View Details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\"
             }"
@@ -86,7 +86,7 @@ jobs:
             -d "{
               \"text\": \"$EMOJI **Coverage Report $STATUS** on \`${{ github.ref_name }}\`\n
               **Commit:** ${{ github.sha }}\n
-              **Message:** ${{ github.event.head_commit.message }}\n
+              **Title:** ${{ github.event.pull_request.title || github.event.head_commit.message }}\n
               **Author:** ${{ github.actor }}\n
               **Run:** [View Details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\"
             }"
