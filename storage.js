@@ -8,7 +8,7 @@ function loadStorage() {
   return new Promise(resolve => {
     chrome.storage.local.get(
       ['shadowTasks', 'taskPriorities', 'sidebarCollapsed', 'sortMode',
-        'courseNotes', 'dismissedNotifications', 'courseLinks', 'customDueDates', 'theme'],
+        'courseNotes', 'dismissedNotifications', 'courseLinks', 'customDueDates', 'theme', 'hiddenTopics'],
       result => {
         resolve({
           shadowTasks: result.shadowTasks || [],
@@ -19,7 +19,8 @@ function loadStorage() {
           dismissedNotifications: result.dismissedNotifications || {},
           courseLinks: result.courseLinks || {},
           customDueDates: result.customDueDates || {},
-          theme: result.theme || 'light'
+          theme: result.theme || 'light',
+          hiddenTopics: result.hiddenTopics || []
         });
       }
     );
@@ -91,6 +92,24 @@ function saveCustomDueDates(customDueDates) {
     chrome.storage.local.set({ customDueDates }, () => {
       if (chrome.runtime.lastError) {
         console.error('[Versatile] saveCustomDueDates failed:', chrome.runtime.lastError.message);
+        reject(new Error(chrome.runtime.lastError.message));
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+/**
+ * An asynchronous function that saves hidden topic IDs to Chrome's LocalStorage.
+ * @param {*} hiddenTopics
+ * @returns a Promise that returns a resolve if a successful save has taken place and throws an error if it fails.
+ */
+function saveHiddenTopics(hiddenTopics) {
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.set({ hiddenTopics }, () => {
+      if (chrome.runtime.lastError) {
+        console.error('[Versatile] saveHiddenTopics failed:', chrome.runtime.lastError.message);
         reject(new Error(chrome.runtime.lastError.message));
       } else {
         resolve();

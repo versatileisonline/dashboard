@@ -81,7 +81,7 @@ function initSidebar(collapsed = false) {
       </div>
 
       <div class="cp-section">
-        <div class="section-title">Topics</div>
+        <div class="section-title">Courses</div>
         <div id="versatile-topics-list"></div>
       </div>
 
@@ -143,7 +143,15 @@ function renderTopicsSection(courses, context) {
     return;
   }
 
-  courses.forEach(course => {
+  const hidden = context.hiddenTopics || [];
+  const visibleCourses = courses.filter(c => !hidden.includes(String(c.id)));
+
+  if (visibleCourses.length === 0) {
+    container.innerHTML = '<p class="cp-task-date" style="padding:4px 0;">No active courses found.</p>';
+    return;
+  }
+
+  visibleCourses.forEach(course => {
     const card = document.createElement('div');
     card.className = 'cp-topic-card cp-topic-card--clickable';
     card.innerHTML = `
@@ -151,6 +159,25 @@ function renderTopicsSection(courses, context) {
       <p class="cp-task-date">Tap to view details &rsaquo;</p>
     `;
     card.addEventListener('click', () => openCourseDetail(course, context));
+
+    const actionsRow = document.createElement('div');
+    actionsRow.className = 'vtask-actions-row';
+    const hideBtn = document.createElement('button');
+    hideBtn.className = 'vtask-delete-btn';
+    hideBtn.textContent = 'Hide';
+    hideBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const updated = [...(context.hiddenTopics || []), String(course.id)];
+      context.hiddenTopics = updated;
+      await saveHiddenTopics(updated);
+      card.remove();
+      if (container.querySelectorAll('.cp-topic-card').length === 0) {
+        container.innerHTML = '<p class="cp-task-date" style="padding:4px 0;">No active courses found.</p>';
+      }
+    });
+    actionsRow.appendChild(hideBtn);
+    card.appendChild(actionsRow);
+
     container.appendChild(card);
   });
 }

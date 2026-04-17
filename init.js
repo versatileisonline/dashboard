@@ -44,7 +44,7 @@ async function initVersatile() {
 
     const {
       shadowTasks, taskPriorities, sidebarCollapsed, sortMode: savedSortMode,
-      courseNotes, dismissedNotifications, courseLinks, customDueDates, theme
+      courseNotes, dismissedNotifications, courseLinks, customDueDates, theme, hiddenTopics
     } = storageData;
     rawCanvasTasks = rawItems || [];
     let canvasTasks = filterCanvasItems(rawCanvasTasks, weekOffset, customDueDates);
@@ -64,7 +64,8 @@ async function initVersatile() {
       courseLinks,
       courses,
       customDueDates,
-      theme
+      theme,
+      hiddenTopics
     };
 
     renderTopicsSection(courses, context);
