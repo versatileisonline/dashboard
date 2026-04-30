@@ -203,7 +203,8 @@ function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks, refreshCa
         updated[taskId] = clicked;
       }
 
-      await saveStorage(shadowTasks, updated);
+      const latest = await loadStorage();
+      await saveStorage(shadowTasks, updated, latest.coursePriorities);
       if (refreshCallback) {
         refreshCallback(shadowTasks, updated, customDueDates);
       } else {
@@ -218,7 +219,8 @@ function buildTaskCard(task, taskPriorities, canvasTasks, shadowTasks, refreshCa
       const updatedShadow = shadowTasks.filter(taskItem => taskItem.id !== taskId);
       const updatedPriorities = { ...taskPriorities };
       delete updatedPriorities[taskId];
-      await saveStorage(updatedShadow, updatedPriorities);
+      const latest = loadStorage();
+      await saveStorage(updatedShadow, updatedPriorities, latest.coursePriorities);
       if (refreshCallback) {
         refreshCallback(updatedShadow, updatedPriorities, customDueDates);
       } else {

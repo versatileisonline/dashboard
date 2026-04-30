@@ -41,9 +41,9 @@ async function handleAddTask(canvasTasks) {
     externalLink: normalizedLink
   };
 
-  const { shadowTasks, taskPriorities } = await loadStorage();
+  const { shadowTasks, taskPriorities, coursePriorities } = await loadStorage();
   const updatedShadow = [...shadowTasks, newTask];
-  await saveStorage(updatedShadow, taskPriorities);
+  await saveStorage(updatedShadow, taskPriorities, coursePriorities);
 
   resetAddTaskForm();
   renderTodoSection(canvasTasks, updatedShadow, taskPriorities);

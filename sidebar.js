@@ -152,13 +152,54 @@ function renderTopicsSection(courses, context) {
   }
 
   visibleCourses.forEach(course => {
+    const courseKey = String(course.id);
+    const priority = context.coursePriorities?.[courseKey] || null;
+
     const card = document.createElement('div');
-    card.className = 'cp-topic-card cp-topic-card--clickable';
+    card.className = 'cp-topic-card cp-topic-card--clickable' + 
+      (priority ? ` priority-${priority}` : '');
+
     card.innerHTML = `
       <p class="cp-title">${sanitize(course.name)}</p>
       <p class="cp-task-date">Tap to view details &rsaquo;</p>
     `;
     card.addEventListener('click', () => openCourseDetail(course, context));
+
+    const priorityRow = document.createElement('div');
+    priorityRow.className = 'vtask-priority-row';
+    const ARROW_ICONS = { low: '↓', med: '↑', xtrm: '↑↑' };
+    ['xtrm', 'med', 'low'].forEach(p => {
+      const dot = document.createElement('button');
+      dot.className = `vtask-dot vtask-dot-${p}${priority === p ? ' vtask-dot-active' : ''}`;
+      dot.dataset.priority = p;
+      dot.dataset.id = courseKey;
+      dot.textContent = ARROW_ICONS[p];
+
+      dot.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const clicked = dot.dataset.priority;
+        const courseId = dot.dataset.id;
+        const updated = { ...(context.coursePriorities || {}) };
+
+        if (updated[courseId] === clicked) {
+          delete updated[courseId];
+        } else {
+          updated[courseId] = clicked;
+        }
+
+        context.coursePriorities = updated;
+        const latest = await loadStorage();
+        
+        await saveStorage(
+          latest.shadowTasks,
+          latest.taskPriorities,
+          updated
+        );
+        renderTopicsSection(courses, context);
+      });
+      priorityRow.appendChild(dot);
+    });
+    card.appendChild(priorityRow); 
 
     const actionsRow = document.createElement('div');
     actionsRow.className = 'vtask-actions-row';

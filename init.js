@@ -43,7 +43,7 @@ async function initVersatile() {
     }
 
     const {
-      shadowTasks, taskPriorities, sidebarCollapsed, sortMode: savedSortMode,
+      shadowTasks, taskPriorities, coursePriorities, sidebarCollapsed, sortMode: savedSortMode,
       courseNotes, dismissedNotifications, courseLinks, customDueDates, theme, hiddenTopics
     } = storageData;
     rawCanvasTasks = rawItems || [];
@@ -58,6 +58,7 @@ async function initVersatile() {
     const context = {
       shadowTasks,
       taskPriorities,
+      coursePriorities,
       notifications,
       courseNotes,
       dismissedNotifications,
