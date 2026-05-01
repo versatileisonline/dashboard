@@ -43,7 +43,7 @@ async function initVersatile() {
     }
 
     const {
-      shadowTasks, taskPriorities, sidebarCollapsed, sortMode: savedSortMode,
+      shadowTasks, taskPriorities, coursePriorities, sidebarCollapsed, sortMode: savedSortMode, courseSortMode: savedCourseSortMode,
       courseNotes, dismissedNotifications, courseLinks, customDueDates, theme, hiddenTopics
     } = storageData;
     rawCanvasTasks = rawItems || [];
@@ -58,6 +58,8 @@ async function initVersatile() {
     const context = {
       shadowTasks,
       taskPriorities,
+      coursePriorities,
+      courseSortMode: savedCourseSortMode,
       notifications,
       courseNotes,
       dismissedNotifications,
@@ -105,7 +107,7 @@ async function initVersatile() {
     // Sort button toggle
     const sortBtn = document.getElementById('versatile-sort-btn');
     function updateSortBtn() {
-      sortBtn.textContent = sortMode === 'date' ? 'Date' : 'Priority';
+      sortBtn.textContent = sortMode === 'date' ? 'DATE' : 'PRIORITY';
       sortBtn.classList.toggle('vtask-sort-active', sortMode === 'priority');
     }
     updateSortBtn();
@@ -117,6 +119,23 @@ async function initVersatile() {
       const latestStorage = await loadStorage();
       const currentCanvasTasks = filterCanvasItems(rawCanvasTasks, weekOffset, latestStorage.customDueDates);
       renderTodoSection(currentCanvasTasks, latestStorage.shadowTasks, latestStorage.taskPriorities, latestStorage.customDueDates);
+    });
+
+    // Courses sort button toggle
+    const courseSortBtn = document.getElementById('versatile-course-sort-btn');
+
+    function updateCourseSortBtn() {
+      courseSortBtn.textContent = context.courseSortMode === 'az' ? 'A-Z' : 'PRIORITY';
+      courseSortBtn.classList.toggle('vtask-sort-active', context.courseSortMode === 'priority');
+    }
+
+    updateCourseSortBtn();
+
+    courseSortBtn.addEventListener('click', () => {
+      context.courseSortMode = context.courseSortMode === 'az' ? 'priority' : 'az';
+      chrome.storage.local.set({ courseSortMode: context.courseSortMode });
+      updateCourseSortBtn();
+      renderTopicsSection(courses, context);
     });
 
     // Week navigation

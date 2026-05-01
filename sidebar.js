@@ -81,7 +81,10 @@ function initSidebar(collapsed = false) {
       </div>
 
       <div class="cp-section">
-        <div class="section-title">Courses</div>
+        <div class="vtask-section-header">
+          <div class="section-title">Courses</div>
+          <button id="versatile-course-sort-btn" title="Sort courses A-Z">A-Z</button>
+        </div>
         <div id="versatile-topics-list"></div>
       </div>
 
@@ -151,30 +154,96 @@ function renderTopicsSection(courses, context) {
     return;
   }
 
-  visibleCourses.forEach(course => {
+  const sortedCourses = [...visibleCourses].sort((a, b) => {
+    if (context.courseSortMode === 'priority') {
+      const pa = PRIORITY_RANK[context.coursePriorities?.[String(a.id)]] ?? 3;
+      const pb = PRIORITY_RANK[context.coursePriorities?.[String(b.id)]] ?? 3;
+
+      if (pa !== pb) return pa - pb;
+    }
+
+    return a.name.localeCompare(b.name);
+  });
+
+  sortedCourses.forEach(course => {
+    const courseKey = String(course.id);
+    const priority = context.coursePriorities?.[courseKey] || null;
+
     const card = document.createElement('div');
-    card.className = 'cp-topic-card cp-topic-card--clickable';
+    card.className = 'cp-topic-card cp-topic-card--clickable' +
+      (priority ? ` priority-${priority}` : '');
+
     card.innerHTML = `
       <p class="cp-title">${sanitize(course.name)}</p>
       <p class="cp-task-date">Tap to view details &rsaquo;</p>
     `;
     card.addEventListener('click', () => openCourseDetail(course, context));
 
+    const priorityRow = document.createElement('div');
+    priorityRow.className = 'vtask-priority-row';
+
+    const ARROW_ICONS = { low: '↓', med: '↑', xtrm: '↑↑' };
+
+    ['xtrm', 'med', 'low'].forEach(p => {
+      const dot = document.createElement('button');
+      dot.className = `vtask-dot vtask-dot-${p}${priority === p ? ' vtask-dot-active' : ''}`;
+      dot.dataset.priority = p;
+      dot.dataset.id = courseKey;
+      dot.textContent = ARROW_ICONS[p];
+
+      dot.addEventListener('click', async (e) => {
+        e.stopPropagation();
+
+        const clicked = dot.dataset.priority;
+        const courseId = dot.dataset.id;
+        const updated = { ...(context.coursePriorities || {}) };
+
+        if (updated[courseId] === clicked) {
+          delete updated[courseId];
+        } else {
+          updated[courseId] = clicked;
+        }
+
+        context.coursePriorities = updated;
+
+        const latest = await loadStorage();
+
+        await saveStorage(
+          latest.shadowTasks,
+          latest.taskPriorities,
+          updated
+        );
+
+        renderTopicsSection(courses, context);
+      });
+
+      priorityRow.appendChild(dot);
+    });
+
+    card.appendChild(priorityRow);
+
     const actionsRow = document.createElement('div');
     actionsRow.className = 'vtask-actions-row';
+
     const hideBtn = document.createElement('button');
     hideBtn.className = 'vtask-delete-btn';
     hideBtn.textContent = 'Hide';
+
     hideBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
+
       const updated = [...(context.hiddenTopics || []), String(course.id)];
       context.hiddenTopics = updated;
+
       await saveHiddenTopics(updated);
+
       card.remove();
+
       if (container.querySelectorAll('.cp-topic-card').length === 0) {
         container.innerHTML = '<p class="cp-task-date" style="padding:4px 0;">No active courses found.</p>';
       }
     });
+
     actionsRow.appendChild(hideBtn);
     card.appendChild(actionsRow);
 

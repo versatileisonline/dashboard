@@ -77,6 +77,18 @@ body:not(.versatile-hidden) #right-side {
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
+.cp-topic-card.priority-low {
+    border-left: 4px solid #00b050;
+}
+
+.cp-topic-card.priority-med {
+    border-left: 4px solid #ffc000;
+}
+
+.cp-topic-card.priority-xtrm {
+    border-left: 4px solid #ff0000;
+}
+
 .cp-title {
     font-weight: bold;
     font-size: 0.85rem;
@@ -348,7 +360,8 @@ body:not(.versatile-hidden) #right-side {
     margin-bottom: 0;
 }
 
-#versatile-sort-btn {
+#versatile-sort-btn,
+#versatile-course-sort-btn {
     font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -361,12 +374,14 @@ body:not(.versatile-hidden) #right-side {
     cursor: pointer;
 }
 
-#versatile-sort-btn:hover {
+#versatile-sort-btn:hover,
+#versatile-course-sort-btn:hover {
     background-color: #e0e6e9;
     color: #2d3b45;
 }
 
-#versatile-sort-btn.vtask-sort-active {
+#versatile-sort-btn.vtask-sort-active,
+#versatile-course-sort-btn.vtask-sort-active {
     background-color: #2d3b45;
     color: #ffffff;
     border-color: #2d3b45;
@@ -721,17 +736,20 @@ body.dark-mode #vtask-week-label {
     color: #9fc0db;
 }
 
-body.dark-mode #versatile-sort-btn {
+body.dark-mode #versatile-sort-btn,
+body.dark-mode #versatile-course-sort-btn {
     color: #9fc0db;
     border: 1px solid #2c1445;
 }
 
-body.dark-mode #versatile-sort-btn:hover {
+body.dark-mode #versatile-sort-btn:hover,
+body.dark-mode #versatile-course-sort-btn:hover {
     background-color: #5e247b;
     color: #6091b3;
 }
 
-body.dark-mode #versatile-sort-btn.vtask-sort-active {
+body.dark-mode #versatile-sort-btn.vtask-sort-active
+body.dark-mode #versatile-course-sort-btn.vtask-sort-active {
     background-color: #6091b3;
     color: #3d2358;
     border-color: #6091b3;
